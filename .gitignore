@@ -1,0 +1,10 @@
+# Built page: it inlines the Satoshi font, which is not ours to pass on. Build it with `bun web/build.ts`.
+web/dist/
+# The author's own working notes.
+handover.md
+.agent-work/
+.claude-plugin/types/
+.mcpb-cache/
+node_modules/
+.DS_Store
+*.log

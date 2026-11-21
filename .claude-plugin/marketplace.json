@@ -1,0 +1,6 @@
+{
+  "name": "grandmaster",
+  "owner": { "name": "ibrahimshareef96-sys" },
+  "metadata": { "description": "Grandmaster: chess, a Rubik's Cube trainer, solitaire and Mascot Run in a pane beside Claude Code." },
+  "plugins": [{ "name": "grandmaster", "source": "./" }]
+}

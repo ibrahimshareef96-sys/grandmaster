@@ -1,0 +1,297 @@
+<title>Grandmaster</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Unbounded:wght@500;700&display=swap">
+<!-- The chess pieces come from one font on every system, not whatever the OS picks. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&text=%E2%99%9A%E2%99%9B%E2%99%9C%E2%99%9D%E2%99%9E%E2%99%9F%EF%B8%8E&display=block">
+<style>
+@font-face {
+  font-family: "Satoshi";
+  src: url("data:font/ttf;base64,/*FONT*/") format("truetype");
+  font-weight: 300 900;
+  font-display: swap;
+}
+/* Layout: one column; a header with the mascot, a tab strip, then one game panel that
+   splits into board and side rail on wide screens. Graphite by choice: the brand's ground. */
+:root {
+  color-scheme: dark;
+  --ground: #15151c;
+  --surface: #24242f;
+  --surface-2: #34323d;
+  --line: #3a3a47;
+  --ink: #f4f1ea;
+  --ink-muted: #a6a4b0;
+  --ink-faint: #8d8a97;
+  --gold: #f5a524;
+  --danger: #e5484d;
+  --tier-common: #a3acb9;
+  --tier-uncommon: #34d07f;
+  --tier-rare: #3b82f6;
+  --tier-epic: #a26bfa;
+  --tier-legendary: #f5a524;
+  --sq-light: #d9d4c7;
+  --sq-dark: #77718a;
+  --card: #fbfaf6;
+  --card-ink: #15151c;
+  --card-red: #c8343a;
+  --card-back: #2e4f9e;
+  --font-display: "Satoshi", "Arial", sans-serif;
+  --font-label: "Unbounded", "Verdana", sans-serif;
+  --font-mono: "IBM Plex Mono", "Courier New", monospace;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+header { display: flex; gap: 18px; align-items: flex-end; flex-wrap: wrap; }
+#mascot { height: 96px; width: auto; filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.35)); }
+h1 {
+  margin: 0;
+  font-size: clamp(44px, 9vw, 84px);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+  text-wrap: balance;
+}
+.lede { margin: 6px 0 0; color: var(--ink-muted); max-width: 60ch; }
+.label {
+  font-family: var(--font-label);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.tab {
+  font: 700 15px var(--font-display);
+  color: var(--ink-muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.tab kbd { font: 600 11px var(--font-mono); color: var(--ink-faint); }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+.tab[aria-selected="true"] kbd { color: var(--surface-2); }
+button { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (min-width: 900px) { .panel { grid-template-columns: minmax(0, 1fr) 320px; } }
+.rail { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.record {
+  display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
+}
+.record strong { font-size: 28px; font-weight: 900; letter-spacing: -0.03em; }
+.chip {
+  font: 500 11px var(--font-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.status { font-size: 19px; font-weight: 700; min-height: 1.5em; text-wrap: balance; }
+.muted { color: var(--ink-muted); }
+.faint { color: var(--ink-faint); font-size: 14px; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  font: 700 14px var(--font-display);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 13px;
+  cursor: pointer;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+.btn:hover { background: var(--surface-2); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.moves {
+  font: 400 14px var(--font-mono);
+  color: var(--ink-muted);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 12px;
+  max-height: 180px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+/* Chess: eight equal rows and columns; pieces sized from the board's own width. */
+.board-wrap { width: min(100%, 560px); container-type: inline-size; }
+.board {
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  border-radius: 8px;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+.sq {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+}
+.piece {
+  font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", serif;
+  font-size: 10cqi;
+  line-height: 1;
+  user-select: none;
+  touch-action: none;
+}
+.piece.movable { cursor: grab; }
+.piece.lifted { cursor: grabbing; z-index: 50; position: relative; filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.35)); }
+.sq.light { background: var(--sq-light); }
+.sq.dark { background: var(--sq-dark); }
+.sq.last::before, .sq.sel::before, .sq.hint::before, .sq.check::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+}
+.sq.last::before { background: rgba(245, 165, 36, 0.32); }
+.sq.hint::before { background: rgba(52, 208, 127, 0.45); }
+.sq.sel::before { background: rgba(245, 165, 36, 0.62); }
+.sq.check::before { background: radial-gradient(circle, rgba(229, 72, 77, 0.95) 0 38%, rgba(229, 72, 77, 0) 72%); }
+.sq.target::after {
+  content: ""; position: absolute; width: 28%; height: 28%; border-radius: 50%;
+  background: rgba(21, 21, 28, 0.38); pointer-events: none;
+}
+.sq.target.capture::after {
+  width: 86%; height: 86%; background: transparent; border: 5px solid rgba(21, 21, 28, 0.38);
+}
+.piece { position: relative; z-index: 1; }
+.piece.w { color: #fbfaf6; -webkit-text-stroke: 0.035em #15151c; paint-order: stroke fill; text-shadow: 0 0.04em 0 rgba(21, 21, 28, 0.35); }
+.piece.b { color: #15151c; -webkit-text-stroke: 0.02em #15151c; text-shadow: 0 0.03em 0 rgba(251, 250, 246, 0.2); }
+.coord {
+  position: absolute; font: 600 10px var(--font-mono); opacity: 0.75; pointer-events: none;
+}
+.coord.file { right: 4px; bottom: 2px; }
+.coord.rank { left: 4px; top: 3px; }
+.sq.light .coord { color: var(--sq-dark); }
+.sq.dark .coord { color: var(--sq-light); }
+
+/* Cube */
+.cube-stage {
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 1;
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 40%, #2a2a36 0%, var(--ground) 70%);
+  touch-action: none;
+  cursor: grab;
+  position: relative;
+}
+.cube-stage:active { cursor: grabbing; }
+.cube-stage.flat { aspect-ratio: auto; padding: 16px; cursor: default; background: transparent; }
+.cube-canvas { width: 100%; height: 100%; display: block; }
+.net {
+  display: grid;
+  grid-template-columns: repeat(12, var(--st));
+  grid-template-rows: repeat(9, var(--st));
+  gap: 3px;
+  --st: clamp(20px, 6.2vw, 38px);
+}
+.sticker { border-radius: 4px; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18); }
+.turns { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+.turns .btn { font-family: var(--font-mono); padding: 8px 0; }
+.clock { font: 600 clamp(40px, 8vw, 64px) var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+.algs { display: flex; flex-direction: column; gap: 6px; }
+.alg {
+  text-align: left; display: flex; flex-direction: column; gap: 2px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 9px 12px; color: var(--ink); cursor: pointer; font: 700 14px var(--font-display);
+}
+.alg code { font: 400 13px var(--font-mono); color: var(--ink-muted); }
+
+/* Solitaire */
+/* Cards are sized from the table's own width (7 columns, 6 gaps), so the table never spills. */
+.table { container-type: inline-size; display: flex; flex-direction: column; gap: 18px; user-select: none; min-width: 0; }
+.row {
+  --gap: clamp(4px, 1.4cqi, 12px);
+  --cw: min(84px, calc((100cqi - 6 * var(--gap)) / 7));
+  --ch: calc(var(--cw) * 1.4);
+  display: grid; grid-template-columns: repeat(7, var(--cw)); gap: var(--gap);
+}
+.pile { position: relative; width: var(--cw); min-height: var(--ch); }
+.slot {
+  width: var(--cw); height: var(--ch); border-radius: 8px; border: 1.5px dashed var(--line);
+  display: grid; place-items: center; color: var(--ink-faint); font: 700 13px var(--font-display);
+  cursor: pointer; background: transparent; padding: 0;
+}
+.card {
+  position: absolute; left: 0; width: var(--cw); height: var(--ch); border-radius: 8px; padding: 0;
+  border: 1px solid rgba(21, 21, 28, 0.25); cursor: grab; text-align: left;
+  font-family: var(--font-display); touch-action: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.card.lifted { z-index: 60; cursor: grabbing; box-shadow: 0 14px 26px rgba(0, 0, 0, 0.45); }
+.pile.can-drop::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 11px;
+  border: 2px solid var(--tier-uncommon); pointer-events: none;
+}
+.card.up { background: var(--card); color: var(--card-ink); }
+.card.up.red { color: var(--card-red); }
+.card.down {
+  background: repeating-linear-gradient(45deg, var(--card-back) 0 6px, #3a5fb4 6px 12px);
+  cursor: default;
+}
+.card .corner { position: absolute; top: 4px; left: 6px; font-weight: 900; font-size: clamp(12px, 2.6vw, 18px); line-height: 1; letter-spacing: -0.03em; }
+.card .pip { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(18px, 5vw, 36px); }
+.card.selected { outline: 3px solid var(--gold); outline-offset: -1px; z-index: 30; }
+.card.down { cursor: default; }
+.stock { cursor: pointer !important; }
+
+/* Runner */
+.field { width: 100%; max-width: 760px; aspect-ratio: 64 / 30; border-radius: 12px; background: #101418; display: block; touch-action: manipulation; cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <img id="mascot" alt="The Shareefico mascot" hidden>
+
+    <div>
+      <h1>Grandmaster</h1>
+      <p class="lede">Chess, the Rubik's Cube, Klondike and a run with the mascot. The same games as the Claude Code pane, here for when no session is open.</p>
+    </div>
+  </header>
+  <nav role="tablist" aria-label="Games" id="tabs"></nav>
+  <main id="game"></main>
+  <p class="faint">Progress here is saved in this browser. The Claude Code pane keeps its own record.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+<script id="gm-engine">/*ENGINE*/</script>
+<script>window.GM_ART = /*ART*/</script>
+<script>/*APP*/</script>

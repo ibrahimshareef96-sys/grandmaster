@@ -1,6 +1,6 @@
 {
   "name": "grandmaster",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A games pane beside the chat: chess against an engine, a timed Rubik's Cube, Klondike solitaire and Mascot Run, with progress kept across sessions.",
   "author": { "name": "ibrahimshareef96-sys" },
   "license": "SEE LICENSE IN LICENSE",

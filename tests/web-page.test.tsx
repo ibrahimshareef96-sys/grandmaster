@@ -1,9 +1,9 @@
 import type { On } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 
-import { webPageFrom } from '../hooks/register'
+import { webPageFor, webPageFrom } from '../hooks/register'
 
-const DEFAULT = 'https://github.com/ibrahimshareef96-sys/grandmaster#the-full-version'
+const DEFAULT = 'https://ibrahimshareef96-sys.github.io/grandmaster/'
 const PANE = {
   plugin: 'grandmaster',
   component: 'Pane',
@@ -39,22 +39,29 @@ test('with no option set, the link is the manifest default', async ($, on) => {
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   // No `options` here, so the kit fills in plugin.json's default: it must match the code's fallback.
-  expect((await ui.find({ type: 'Link' }))?.props?.href).toBe(webPageFrom(undefined))
+  expect((await ui.find({ type: 'Link' }))?.props?.href).toBe(`${webPageFrom(undefined)}#chess`)
   await ui.unmount()
 })
 
-test('the pane links to the build steps by default', async ($, on) => {
+test('the 3D link opens the game the pane shows', async ($, on) => {
   engine(on)
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
-  expect((await ui.find({ type: 'Link' }))?.props?.href).toBe(DEFAULT)
+  expect((await ui.find({ type: 'Link' }))?.props?.href).toBe(`${DEFAULT}#chess`)
+  await ui.press({ key: 'tab-cube' })
+  expect((await ui.find({ type: 'Link' }))?.props?.href).toBe(`${DEFAULT}#cube`)
   await ui.unmount()
+})
+
+test('a link that names its own # is kept as it is', () => {
+  expect(webPageFor('https://example.com/a#runner', 'chess')).toBe('https://example.com/a#runner')
+  expect(webPageFor('https://example.com/a', 'solitaire')).toBe('https://example.com/a#solitaire')
 })
 
 test('the pane links to the page the webPage option names', { options: { webPage: 'https://example.com/mine' } }, async ($, on) => {
   engine(on)
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  expect((await ui.find({ type: 'Link' }))?.props?.href).toBe('https://example.com/mine')
+  expect((await ui.find({ type: 'Link' }))?.props?.href).toBe('https://example.com/mine#chess')
   await ui.unmount()
 })

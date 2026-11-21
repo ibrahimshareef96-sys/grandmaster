@@ -13,11 +13,16 @@ const TITLE = 'Grandmaster'
 const STATS_KEY = 'stats'
 const SEEN_KEY = 'results.seen'
 /**
- * Where "Play the full version" goes (the same games drawn for a browser: a 3D
- * cube, drag and drop). Set by the `webPage` option; anything but an http(s)
- * link falls back to the build steps on GitHub.
+ * Where "Play the 3D version" goes: the same games drawn for a browser (a 3D cube
+ * you drag to turn, drag and drop for chess and cards), served by GitHub Pages
+ * from `docs/`. Set by the `webPage` option; anything but an http(s) link falls
+ * back to this page.
  */
-const DEFAULT_WEB_PAGE = 'https://github.com/ibrahimshareef96-sys/grandmaster#the-full-version'
+const DEFAULT_WEB_PAGE = 'https://ibrahimshareef96-sys.github.io/grandmaster/'
+/** The page opens on the game the pane shows (`#cube` etc.), unless the link names its own `#`. */
+export function webPageFor(base: string, game: Tab): string {
+  return base.includes('#') ? base : `${base}#${game}`
+}
 export function webPageFrom(value: unknown): string {
   if (typeof value !== 'string') return DEFAULT_WEB_PAGE
   try {
@@ -139,11 +144,15 @@ export const register: Register = (on, options) => {
       </Box>
     )
     const { Link } = $.ui.resolve(e)
+    // The 3D version leads: the boards below are the quick text-cell version.
     const header = (
       <Box flexDirection="column">
+        <Text bold>
+          <Link href={webPageFor(webPage, current)} label="▶ Play the 3D version" />
+        </Text>
+        <Text dimColor>A cube you drag to turn, drag-and-drop chess and cards. Opens in your browser.</Text>
         {tabs}
         <Text dimColor>{summary(current, record)}</Text>
-        <Link href={webPage} label="Play the full version: 3D cube, drag and drop" />
       </Box>
     )
 

@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "description": "A games pane beside the chat: chess against an engine, a timed Rubik's Cube, Klondike solitaire and Mascot Run, with progress kept across sessions.",
   "author": { "name": "ibrahimshareef96-sys" },
+  "license": "SEE LICENSE IN LICENSE",
   "userConfig": {
     "webPage": {
       "type": "string",
       "title": "Full version link",
-      "description": "Where the pane's 'Play the full version' link goes: your own hosted copy of web/dist/grandmaster.html, or the build steps on GitHub.",
-      "default": "https://github.com/ibrahimshareef96-sys/grandmaster#the-full-version"
+      "description": "Where the pane's 'Play the 3D version' link goes: the hosted page by default, or your own copy of the built page.",
+      "default": "https://ibrahimshareef96-sys.github.io/grandmaster/"
     }
   },
   "types": "./types/index.d.ts"

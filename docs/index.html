@@ -1,0 +1,1796 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap">
+<title>Grandmaster</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Unbounded:wght@500;700&display=swap">
+<!-- The chess pieces come from one font on every system, not whatever the OS picks. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&text=%E2%99%9A%E2%99%9B%E2%99%9C%E2%99%9D%E2%99%9E%E2%99%9F%EF%B8%8E&display=block">
+<style>
+/* Layout: one column; a header with the mascot, a tab strip, then one game panel that
+   splits into board and side rail on wide screens. Graphite by choice: the brand's ground. */
+:root {
+  color-scheme: dark;
+  --ground: #15151c;
+  --surface: #24242f;
+  --surface-2: #34323d;
+  --line: #3a3a47;
+  --ink: #f4f1ea;
+  --ink-muted: #a6a4b0;
+  --ink-faint: #8d8a97;
+  --gold: #f5a524;
+  --danger: #e5484d;
+  --tier-common: #a3acb9;
+  --tier-uncommon: #34d07f;
+  --tier-rare: #3b82f6;
+  --tier-epic: #a26bfa;
+  --tier-legendary: #f5a524;
+  --sq-light: #d9d4c7;
+  --sq-dark: #77718a;
+  --card: #fbfaf6;
+  --card-ink: #15151c;
+  --card-red: #c8343a;
+  --card-back: #2e4f9e;
+  --font-display: "Satoshi", "Arial", sans-serif;
+  --font-label: "Unbounded", "Verdana", sans-serif;
+  --font-mono: "IBM Plex Mono", "Courier New", monospace;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+header { display: flex; gap: 18px; align-items: flex-end; flex-wrap: wrap; }
+#mascot { height: 96px; width: auto; filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.35)); }
+h1 {
+  margin: 0;
+  font-size: clamp(44px, 9vw, 84px);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+  text-wrap: balance;
+}
+.lede { margin: 6px 0 0; color: var(--ink-muted); max-width: 60ch; }
+.label {
+  font-family: var(--font-label);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.tab {
+  font: 700 15px var(--font-display);
+  color: var(--ink-muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.tab kbd { font: 600 11px var(--font-mono); color: var(--ink-faint); }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+.tab[aria-selected="true"] kbd { color: var(--surface-2); }
+button { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (min-width: 900px) { .panel { grid-template-columns: minmax(0, 1fr) 320px; } }
+.rail { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.record {
+  display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
+}
+.record strong { font-size: 28px; font-weight: 900; letter-spacing: -0.03em; }
+.chip {
+  font: 500 11px var(--font-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.status { font-size: 19px; font-weight: 700; min-height: 1.5em; text-wrap: balance; }
+.muted { color: var(--ink-muted); }
+.faint { color: var(--ink-faint); font-size: 14px; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  font: 700 14px var(--font-display);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 13px;
+  cursor: pointer;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+.btn:hover { background: var(--surface-2); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.moves {
+  font: 400 14px var(--font-mono);
+  color: var(--ink-muted);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 12px;
+  max-height: 180px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+/* Chess: eight equal rows and columns; pieces sized from the board's own width. */
+.board-wrap { width: min(100%, 560px); container-type: inline-size; }
+.board {
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  border-radius: 8px;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+.sq {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+}
+.piece {
+  font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", serif;
+  font-size: 10cqi;
+  line-height: 1;
+  user-select: none;
+  touch-action: none;
+}
+.piece.movable { cursor: grab; }
+.piece.lifted { cursor: grabbing; z-index: 50; position: relative; filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.35)); }
+.sq.light { background: var(--sq-light); }
+.sq.dark { background: var(--sq-dark); }
+.sq.last::before, .sq.sel::before, .sq.hint::before, .sq.check::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+}
+.sq.last::before { background: rgba(245, 165, 36, 0.32); }
+.sq.hint::before { background: rgba(52, 208, 127, 0.45); }
+.sq.sel::before { background: rgba(245, 165, 36, 0.62); }
+.sq.check::before { background: radial-gradient(circle, rgba(229, 72, 77, 0.95) 0 38%, rgba(229, 72, 77, 0) 72%); }
+.sq.target::after {
+  content: ""; position: absolute; width: 28%; height: 28%; border-radius: 50%;
+  background: rgba(21, 21, 28, 0.38); pointer-events: none;
+}
+.sq.target.capture::after {
+  width: 86%; height: 86%; background: transparent; border: 5px solid rgba(21, 21, 28, 0.38);
+}
+.piece { position: relative; z-index: 1; }
+.piece.w { color: #fbfaf6; -webkit-text-stroke: 0.035em #15151c; paint-order: stroke fill; text-shadow: 0 0.04em 0 rgba(21, 21, 28, 0.35); }
+.piece.b { color: #15151c; -webkit-text-stroke: 0.02em #15151c; text-shadow: 0 0.03em 0 rgba(251, 250, 246, 0.2); }
+.coord {
+  position: absolute; font: 600 10px var(--font-mono); opacity: 0.75; pointer-events: none;
+}
+.coord.file { right: 4px; bottom: 2px; }
+.coord.rank { left: 4px; top: 3px; }
+.sq.light .coord { color: var(--sq-dark); }
+.sq.dark .coord { color: var(--sq-light); }
+
+/* Cube */
+.cube-stage {
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 1;
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 40%, #2a2a36 0%, var(--ground) 70%);
+  touch-action: none;
+  cursor: grab;
+  position: relative;
+}
+.cube-stage:active { cursor: grabbing; }
+.cube-stage.flat { aspect-ratio: auto; padding: 16px; cursor: default; background: transparent; }
+.cube-canvas { width: 100%; height: 100%; display: block; }
+.net {
+  display: grid;
+  grid-template-columns: repeat(12, var(--st));
+  grid-template-rows: repeat(9, var(--st));
+  gap: 3px;
+  --st: clamp(20px, 6.2vw, 38px);
+}
+.sticker { border-radius: 4px; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18); }
+.turns { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+.turns .btn { font-family: var(--font-mono); padding: 8px 0; }
+.clock { font: 600 clamp(40px, 8vw, 64px) var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+.algs { display: flex; flex-direction: column; gap: 6px; }
+.alg {
+  text-align: left; display: flex; flex-direction: column; gap: 2px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 9px 12px; color: var(--ink); cursor: pointer; font: 700 14px var(--font-display);
+}
+.alg code { font: 400 13px var(--font-mono); color: var(--ink-muted); }
+
+/* Solitaire */
+/* Cards are sized from the table's own width (7 columns, 6 gaps), so the table never spills. */
+.table { container-type: inline-size; display: flex; flex-direction: column; gap: 18px; user-select: none; min-width: 0; }
+.row {
+  --gap: clamp(4px, 1.4cqi, 12px);
+  --cw: min(84px, calc((100cqi - 6 * var(--gap)) / 7));
+  --ch: calc(var(--cw) * 1.4);
+  display: grid; grid-template-columns: repeat(7, var(--cw)); gap: var(--gap);
+}
+.pile { position: relative; width: var(--cw); min-height: var(--ch); }
+.slot {
+  width: var(--cw); height: var(--ch); border-radius: 8px; border: 1.5px dashed var(--line);
+  display: grid; place-items: center; color: var(--ink-faint); font: 700 13px var(--font-display);
+  cursor: pointer; background: transparent; padding: 0;
+}
+.card {
+  position: absolute; left: 0; width: var(--cw); height: var(--ch); border-radius: 8px; padding: 0;
+  border: 1px solid rgba(21, 21, 28, 0.25); cursor: grab; text-align: left;
+  font-family: var(--font-display); touch-action: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.card.lifted { z-index: 60; cursor: grabbing; box-shadow: 0 14px 26px rgba(0, 0, 0, 0.45); }
+.pile.can-drop::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 11px;
+  border: 2px solid var(--tier-uncommon); pointer-events: none;
+}
+.card.up { background: var(--card); color: var(--card-ink); }
+.card.up.red { color: var(--card-red); }
+.card.down {
+  background: repeating-linear-gradient(45deg, var(--card-back) 0 6px, #3a5fb4 6px 12px);
+  cursor: default;
+}
+.card .corner { position: absolute; top: 4px; left: 6px; font-weight: 900; font-size: clamp(12px, 2.6vw, 18px); line-height: 1; letter-spacing: -0.03em; }
+.card .pip { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(18px, 5vw, 36px); }
+.card.selected { outline: 3px solid var(--gold); outline-offset: -1px; z-index: 30; }
+.card.down { cursor: default; }
+.stock { cursor: pointer !important; }
+
+/* Runner */
+.field { width: 100%; max-width: 760px; aspect-ratio: 64 / 30; border-radius: 12px; background: #101418; display: block; touch-action: manipulation; cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <img id="mascot" alt="The Shareefico mascot" hidden>
+
+    <div>
+      <h1>Grandmaster</h1>
+      <p class="lede">Chess, the Rubik's Cube, Klondike and a run with the mascot. The same games as the Claude Code pane, here for when no session is open.</p>
+    </div>
+  </header>
+  <nav role="tablist" aria-label="Games" id="tabs"></nav>
+  <main id="game"></main>
+  <p class="faint">Progress here is saved in this browser. The Claude Code pane keeps its own record.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+<script id="gm-engine">(()=>{var Le=Object.defineProperty;var Ue=(e)=>e;function Oe(e,n){this[e]=Ue.bind(null,n)}var y=(e,n)=>{for(var t in n)Le(e,t,{get:n[t],enumerable:!0,configurable:!0,set:Oe.bind(n,t)})};var H={};y(H,{START_FEN:()=>De,inCheck:()=>B,isAttacked:()=>D,kingSquare:()=>ce,legalMoves:()=>F,makeMove:()=>w,outcome:()=>qe,parseFen:()=>Ke,pieceAt:()=>d,positionKey:()=>fe,pseudoMoves:()=>P,sameMove:()=>Ve,sideOf:()=>T,squareName:()=>O,toFen:()=>_e,toSan:()=>Qe});var De="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";var le=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]],ae=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]],I=[[-1,0],[1,0],[0,-1],[0,1]],V=[[-1,-1],[-1,1],[1,-1],[1,1]],T=(e)=>e===""?null:e===e.toUpperCase()?"w":"b",K=(e)=>e==="w"?"b":"w",d=(e,n)=>e[n]??"",k=(e,n)=>e>=0&&e<8&&n>=0&&n<8,m=(e,n)=>e*8+n,O=(e)=>`${"abcdefgh"[e%8]}${8-Math.floor(e/8)}`;function Ke(e){let n=e.trim().split(/\s+/),[t="",r="",o="-",s="-",u,i]=n;if(n.length<4)return null;let c=t.split("/");if(c.length!==8)return null;let l=[];for(let h of c){for(let g of h)if(/[1-8]/.test(g))for(let ie=0;ie<Number(g);ie++)l.push("");else if(/[prnbqkPRNBQK]/.test(g))l.push(g);else return null;if(l.length%8!==0)return null}if(l.length!==64)return null;let a=r==="b"?"b":r==="w"?"w":null;if(!a)return null;let f=o==="-"?"":o.replace(/[^KQkq]/g,""),b=-1;if(s!=="-"){let h="abcdefgh".indexOf(s[0]??""),g=Number(s[1]);if(h<0||!(g>=1&&g<=8)||s.length!==2)return null;b=m(8-g,h)}let p=Number(u??0),S=Number(i??1);return{board:l,turn:a,castling:f,ep:b,half:Number.isFinite(p)&&p>=0?p:0,full:Number.isFinite(S)&&S>=1?S:1}}function _e(e){let n=[];for(let r=0;r<8;r++){let o="",s=0;for(let u=0;u<8;u++){let i=d(e.board,m(r,u));if(i==="")s++;else{if(s)o+=String(s);s=0,o+=i}}if(s)o+=String(s);n.push(o)}let t=e.ep<0?"-":O(e.ep);return`${n.join("/")} ${e.turn} ${e.castling||"-"} ${t} ${e.half} ${e.full}`}function D(e,n,t){let r=Math.floor(n/8),o=n%8,s=(l)=>T(l)===t,u=t==="w"?r+1:r-1,i=t==="w"?"P":"p";for(let l of[-1,1])if(k(u,o+l)&&d(e,m(u,o+l))===i)return!0;for(let[l,a]of le){let f=k(r+l,o+a)?d(e,m(r+l,o+a)):"";if(s(f)&&f.toLowerCase()==="n")return!0}for(let[l,a]of ae){let f=k(r+l,o+a)?d(e,m(r+l,o+a)):"";if(s(f)&&f.toLowerCase()==="k")return!0}let c=(l,a)=>{for(let[f,b]of l){let p=r+f,S=o+b;while(k(p,S)){let h=d(e,m(p,S));if(h!==""){if(s(h)&&a.includes(h.toLowerCase()))return!0;break}p+=f,S+=b}}return!1};return c(I,"rq")||c(V,"bq")}function ce(e,n){return e.indexOf(n==="w"?"K":"k")}function B(e,n=e.turn){let t=ce(e.board,n);return t>=0&&D(e.board,t,K(n))}function Ne(e,n,t){let r=e.turn==="w",o=Math.floor(n/8),s=n%8,u=r?-1:1,i=r?0:7,c=(l,a)=>{if(Math.floor(l/8)===i)for(let f of["q","r","b","n"])t.push({from:n,to:l,promo:f});else t.push(a?{from:n,to:l,flag:a}:{from:n,to:l})};if(k(o+u,s)&&d(e.board,m(o+u,s))===""){if(c(m(o+u,s)),o===(r?6:1)&&d(e.board,m(o+2*u,s))==="")c(m(o+2*u,s),"double")}for(let l of[-1,1]){if(!k(o+u,s+l))continue;let a=m(o+u,s+l),f=d(e.board,a);if(f!==""&&T(f)!==e.turn)c(a);else if(a===e.ep)c(a,"ep")}}function G(e,n,t,r,o){let s=Math.floor(n/8),u=n%8;for(let[i,c]of t){let l=s+i,a=u+c;while(k(l,a)){let f=d(e.board,m(l,a));if(f==="")o.push({from:n,to:m(l,a)});else{if(T(f)!==e.turn)o.push({from:n,to:m(l,a)});break}if(!r)break;l+=i,a+=c}}}function $e(e,n){let t=e.turn==="w",r=t?60:4,o=t?"K":"k",s=t?"R":"r",u=K(e.turn);if(d(e.board,r)!==o||D(e.board,r,u))return;let i=(c,l)=>c.every((a)=>d(e.board,a)==="")&&l.every((a)=>!D(e.board,a,u));if(e.castling.includes(t?"K":"k")&&d(e.board,r+3)===s&&i([r+1,r+2],[r+1,r+2]))n.push({from:r,to:r+2,flag:"castle"});if(e.castling.includes(t?"Q":"q")&&d(e.board,r-4)===s&&i([r-1,r-2,r-3],[r-1,r-2]))n.push({from:r,to:r-2,flag:"castle"})}function P(e){let n=[];for(let t=0;t<64;t++){let r=d(e.board,t);if(T(r)!==e.turn)continue;switch(r.toLowerCase()){case"p":Ne(e,t,n);break;case"n":G(e,t,le,!1,n);break;case"b":G(e,t,V,!0,n);break;case"r":G(e,t,I,!0,n);break;case"q":G(e,t,[...I,...V],!0,n);break;case"k":G(e,t,ae,!1,n),$e(e,n);break}}return n}var Ie={63:"K",56:"Q",7:"k",0:"q"};function w(e,n){let t=[...e.board],r=d(t,n.from),o=T(r)==="w",s=d(t,n.to);if(t[n.to]=n.promo?o?n.promo.toUpperCase():n.promo:r,t[n.from]="",n.flag==="ep")t[n.to+(o?8:-8)]="";if(n.flag==="castle"){let[c,l]=n.to>n.from?[n.from+3,n.from+1]:[n.from-4,n.from-1];t[l]=d(t,c),t[c]=""}let u=e.castling;if(r==="K")u=u.replace(/[KQ]/g,"");if(r==="k")u=u.replace(/[kq]/g,"");for(let c of[n.from,n.to]){let l=Ie[c];if(l)u=u.replace(l,"")}let i=r.toLowerCase()==="p";return{board:t,turn:K(e.turn),castling:u,ep:n.flag==="double"?(n.from+n.to)/2:-1,half:i||s!==""||n.flag==="ep"?0:e.half+1,full:e.turn==="b"?e.full+1:e.full}}function F(e){return P(e).filter((n)=>!B(w(e,n),e.turn))}var Ve=(e,n)=>e.from===n.from&&e.to===n.to&&(e.promo??"")===(n.promo??"");function He(e){if(e.ep<0)return!1;return F(e).some((n)=>n.flag==="ep")}var fe=(e)=>`${e.board.map((n)=>n||".").join("")} ${e.turn} ${e.castling} ${He(e)?e.ep:-1}`;function je(e){let n=e.filter((t)=>t!==""&&t.toLowerCase()!=="k");if(n.length===0)return!0;if(n.length===1)return/[nbNB]/.test(n[0]??"");if(n.every((t)=>t.toLowerCase()==="b")){let t=new Set;return e.forEach((r,o)=>{if(r.toLowerCase()==="b")t.add((Math.floor(o/8)+o%8)%2)}),t.size===1}return!1}function qe(e,n=[]){if(F(e).length===0)return B(e)?{kind:"checkmate",winner:K(e.turn)}:{kind:"draw",reason:"stalemate"};if(e.half>=100)return{kind:"draw",reason:"fifty-move rule"};if(je(e.board))return{kind:"draw",reason:"insufficient material"};let t=fe(e);if(n.filter((r)=>r===t).length>=3)return{kind:"draw",reason:"repetition"};return{kind:"playing"}}function Qe(e,n){let t=d(e.board,n.from),r=t.toUpperCase(),o;if(n.flag==="castle")o=n.to>n.from?"O-O":"O-O-O";else{let u=d(e.board,n.to)!==""||n.flag==="ep",i=O(n.to);if(r==="P")o=`${u?`${"abcdefgh"[n.from%8]}x`:""}${i}${n.promo?`=${n.promo.toUpperCase()}`:""}`;else{let c=F(e).filter((a)=>a.to===n.to&&a.from!==n.from&&d(e.board,a.from)===t),l="";if(c.length>0){let a=c.some((p)=>p.from%8===n.from%8),f=c.some((p)=>Math.floor(p.from/8)===Math.floor(n.from/8)),b=O(n.from);l=!a?b.slice(0,1):!f?b.slice(1):b}o=`${r}${l}${u?"x":""}${i}`}}let s=w(e,n);if(B(s))o+=F(s).length===0?"#":"+";return o}var Q={};y(Q,{LEVELS:()=>R,evaluate:()=>me,pickMove:()=>tn,searchDepth:()=>nn});var ze={p:100,n:320,b:330,r:500,q:900,k:0},Je=1e5,Xe=[0,0,0,0,0,0,0,0,50,50,50,50,50,50,50,50,10,10,20,30,30,20,10,10,5,5,10,25,25,10,5,5,0,0,0,20,20,0,0,0,5,-5,-10,0,0,-10,-5,5,5,10,10,-20,-20,10,10,5,0,0,0,0,0,0,0,0],Ye=[-50,-40,-30,-30,-30,-30,-40,-50,-40,-20,0,0,0,0,-20,-40,-30,0,10,15,15,10,0,-30,-30,5,15,20,20,15,5,-30,-30,0,15,20,20,15,0,-30,-30,5,10,15,15,10,5,-30,-40,-20,0,5,5,0,-20,-40,-50,-40,-30,-30,-30,-30,-40,-50],de=[-20,-10,-10,-10,-10,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,10,10,5,0,-10,-10,5,5,10,10,5,5,-10,-10,0,10,10,10,10,0,-10,-10,10,10,10,10,10,10,-10,-10,5,0,0,0,0,5,-10,-20,-10,-10,-10,-10,-10,-10,-20],We=[0,0,0,0,0,0,0,0,5,10,10,10,10,10,10,5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,0,0,0,5,5,0,0,0],Ze=[-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-20,-30,-30,-40,-40,-30,-30,-20,-10,-20,-20,-20,-20,-20,-20,-10,20,20,0,0,0,0,20,20,20,30,10,0,0,10,30,20],en={p:Xe,n:Ye,b:de,r:We,q:de,k:Ze};function me(e){let n=0;for(let t=0;t<64;t++){let r=d(e.board,t);if(r==="")continue;let o=r.toLowerCase(),s=T(r)==="w",u=s?t:(7-Math.floor(t/8))*8+t%8,i=_(r)+(en[o]?.[u]??0);n+=s?i:-i}return e.turn==="w"?n:-n}var _=(e)=>ze[e.toLowerCase()]??0,pe=(e,n)=>(n.flag==="ep"?100:_(d(e.board,n.to)))+(n.promo?_(n.promo):0);function j(e,n,t){let r=(o)=>{if(t&&o.from===t.from&&o.to===t.to&&o.promo===t.promo)return 1e9;let s=pe(e,o);return s?s*10-_(d(e.board,o.from)):0};return[...n].sort((o,s)=>r(s)-r(o))}class q extends Error{}function be(e){if(e.nodes++,(e.nodes&1023)===0&&Date.now()>e.deadline)throw new q}function Se(e,n,t,r,o){be(r);let s=me(e);if(s>=t||o===0)return s;let u=Math.max(n,s),i=e.turn,c=P(e).filter((l)=>pe(e,l)>0);for(let l of j(e,c)){let a=w(e,l);if(B(a,i))continue;let f=-Se(a,-t,-u,r,o-1);if(f>=t)return f;if(f>u)u=f}return u}function Be(e,n,t,r,o,s){if(be(s),n===0)return Se(e,t,r,s,4);let u=e.turn,i=-1/0,c=0;for(let l of j(e,P(e))){let a=w(e,l);if(B(a,u))continue;c++;let f=-Be(a,n-1,-r,-Math.max(t,i),o+1,s);if(f>i)i=f;if(i>=r)return i}if(c===0)return B(e)?-Je+o:0;if(e.half>=100)return 0;return i}function nn(e,n,t,r){let o={deadline:t,nodes:0},s=e.turn,u=null;try{for(let i of j(e,P(e),r)){let c=w(e,i);if(B(c,s))continue;let l=u?u.score:-1/0,a=-Be(c,n-1,-1/0,-l,1,o);if(!u||a>u.score)u={move:i,score:a,depth:n}}}catch(i){if(i instanceof q)return null;throw i}return u}var R=[{name:"Easy",depth:1,blunder:0.3,rating:800},{name:"Club",depth:2,blunder:0.05,rating:1200},{name:"Strong",depth:4,blunder:0,rating:1600}];function tn(e,n,t,r){let o=R[t]?.blunder??0;if(r()>=o)return n.move;let s=e.turn,u=P(e).filter((i)=>!B(w(e,i),s));return u[Math.floor(r()*u.length)]??n.move}var X={};y(X,{ALGS:()=>ln,BASE_TURNS:()=>un,FACES:()=>v,STICKERS:()=>z,TURNS:()=>J,apply:()=>cn,isSolved:()=>fn,parseMove:()=>xe,readCube:()=>mn,scramble:()=>dn,solved:()=>an,turn:()=>ye});var v=["U","R","F","D","L","B"],he={U:{n:[0,1,0],pos:(e,n)=>[n-1,1,e-1]},R:{n:[1,0,0],pos:(e,n)=>[1,1-e,1-n]},F:{n:[0,0,1],pos:(e,n)=>[n-1,1-e,1]},D:{n:[0,-1,0],pos:(e,n)=>[n-1,-1,1-e]},L:{n:[-1,0,0],pos:(e,n)=>[-1,1-e,n-1]},B:{n:[0,0,-1],pos:(e,n)=>[1-n,1-e,-1]}},z=v.flatMap((e)=>Array.from({length:9},(n,t)=>({p:he[e].pos(Math.floor(t/3),t%3),n:he[e].n}))),we=(e,n)=>e[0]*n[0]+e[1]*n[1]+e[2]*n[2],rn=(e,n)=>[e[1]*n[2]-e[2]*n[1],e[2]*n[0]-e[0]*n[2],e[0]*n[1]-e[1]*n[0]],ge=(e,n)=>{let t=rn(n,e),r=we(n,e);return[-t[0]+n[0]*r,-t[1]+n[1]*r,-t[2]+n[2]*r]},Te=(e,n)=>e[0]===n[0]&&e[1]===n[1]&&e[2]===n[2],on=(e)=>z.findIndex((n)=>Te(n.p,e.p)&&Te(n.n,e.n)),J={U:{axis:[0,1,0],layers:[1]},D:{axis:[0,-1,0],layers:[1]},R:{axis:[1,0,0],layers:[1]},L:{axis:[-1,0,0],layers:[1]},F:{axis:[0,0,1],layers:[1]},B:{axis:[0,0,-1],layers:[1]},M:{axis:[-1,0,0],layers:[0]},E:{axis:[0,-1,0],layers:[0]},S:{axis:[0,0,1],layers:[0]},x:{axis:[1,0,0],layers:[-1,0,1]},y:{axis:[0,1,0],layers:[-1,0,1]},z:{axis:[0,0,1],layers:[-1,0,1]}},sn=Object.fromEntries(Object.entries(J).map(([e,{axis:n,layers:t}])=>[e,z.map((r,o)=>{if(!t.includes(we(r.p,n)))return o;let s=on({p:ge(r.p,n),n:ge(r.n,n)});if(s<0)throw Error(`cube: turn ${e} lost sticker ${o}`);return s})])),un=Object.keys(J),ln=[{name:"Sexy move",alg:"R U R' U'",order:6},{name:"Sledgehammer",alg:"R' F R F'",order:6},{name:"Edge flip (OLL)",alg:"F R U R' U' F'",order:6},{name:"Sune (OLL)",alg:"R U R' U R U2 R'",order:6},{name:"Anti-Sune (OLL)",alg:"R U2 R' U' R U' R'",order:6},{name:"Ua perm (PLL)",alg:"R U' R U R U R U' R' U' R2",order:3},{name:"T perm (PLL)",alg:"R U R' U' R' F R2 U' R' U' R U R' F'",order:2}],an=()=>v.flatMap((e)=>Array(9).fill(e));function xe(e){let n=/^([UDRLFBMESxyz])(['2]?)$/.exec(e.trim()),t=n?.[1];if(!n||!t)return null;return{base:t,times:n[2]==="'"?3:n[2]==="2"?2:1}}function ye(e,n){let t=xe(n);if(!t)return e;let r=sn[t.base];if(!r)return e;let o=e;for(let s=0;s<t.times;s++){let u=o,i=[...u];r.forEach((c,l)=>{i[c]=u[l]}),o=i}return o}var cn=(e,n)=>n.split(/\s+/).filter(Boolean).reduce(ye,e),fn=(e)=>v.every((n,t)=>e.slice(t*9,t*9+9).every((r)=>r===e[t*9+4]));function dn(e,n=20){let t=["U","D","R","L","F","B"],r=(s)=>"UDRLFB".indexOf(s)>>1,o=[];while(o.length<n){let s=t[Math.floor(e()*6)]??"U",u=o[o.length-1]?.[0],i=o[o.length-2]?.[0];if(s===u)continue;if(u&&i&&r(s)===r(u)&&r(u)===r(i))continue;o.push(s+(["","'","2"][Math.floor(e()*3)]??""))}return o}function mn(e){if(!Array.isArray(e)||e.length!==54)return null;if(!e.every((t)=>typeof t==="string"&&v.includes(t)))return null;return v.map((t)=>e.filter((r)=>r===t).length).every((t)=>t===9)?e:null}var Z={};y(Z,{SUITS:()=>Pe,autoPlay:()=>hn,canFinish:()=>Tn,canFound:()=>ve,canStack:()=>Re,cardLabel:()=>bn,deal:()=>Sn,draw:()=>Bn,isRed:()=>Y,isWon:()=>gn,lifted:()=>Me,move:()=>Ee,rankOf:()=>M,readKlondike:()=>wn,suitOf:()=>E,toFoundation:()=>W});var Pe=["♠","♥","♦","♣"],pn=["A","2","3","4","5","6","7","8","9","10","J","Q","K"],E=(e)=>Math.floor(e/13),M=(e)=>e%13+1,Y=(e)=>E(e)===1||E(e)===2,bn=(e)=>`${pn[e%13]}${Pe[E(e)]}`,A=(e)=>e[e.length-1];function Sn(e,n=1){let t=Array.from({length:52},(s,u)=>u);for(let s=t.length-1;s>0;s--){let u=Math.floor(e()*(s+1)),i=t[s],c=t[u];t=t.map((l,a)=>a===s?c:a===u?i:l)}let r=[],o=0;for(let s=0;s<7;s++)r.push({down:t.slice(o,o+s),up:t.slice(o+s,o+s+1)}),o+=s+1;return{stock:t.slice(o),waste:[],foundations:[[],[],[],[]],tableau:r,drawCount:n,moves:0}}function Bn(e){if(e.stock.length===0){if(e.waste.length===0)return e;return{...e,stock:[...e.waste].reverse(),waste:[],moves:e.moves+1}}let n=Math.min(e.drawCount,e.stock.length),t=e.stock.slice(e.stock.length-n).reverse();return{...e,stock:e.stock.slice(0,e.stock.length-n),waste:[...e.waste,...t],moves:e.moves+1}}function Me(e,n){if(n.kind==="waste")return e.waste.length?[A(e.waste)]:[];if(n.kind==="foundation"){let r=e.foundations[n.pile];return r&&r.length?[A(r)]:[]}let t=e.tableau[n.col];if(!t||n.index<0||n.index>=t.up.length)return[];return t.up.slice(n.index)}function Re(e,n){if(n===void 0)return M(e)===13;return Y(e)!==Y(n)&&M(e)===M(n)-1}function ve(e,n){let t=A(n);if(t===void 0)return M(e)===1;return E(e)===E(t)&&M(e)===M(t)+1}function ke(e,n){if(n.kind==="waste")return{...e,waste:e.waste.slice(0,-1)};if(n.kind==="foundation")return{...e,foundations:e.foundations.map((t,r)=>r===n.pile?t.slice(0,-1):t)};return{...e,tableau:e.tableau.map((t,r)=>{if(r!==n.col)return t;let o=t.up.slice(0,n.index);return o.length===0&&t.down.length>0?{down:t.down.slice(0,-1),up:[A(t.down)]}:{down:t.down,up:o}})}}function Ee(e,n,t){let r=Me(e,n),o=r[0];if(o===void 0)return null;if(t.kind==="foundation"){let i=e.foundations[t.pile];if(!i||r.length!==1||!ve(o,i))return null;if(n.kind==="foundation"&&n.pile===t.pile)return null;let c=ke(e,n);return{...c,moves:e.moves+1,foundations:c.foundations.map((l,a)=>a===t.pile?[...l,o]:l)}}let s=e.tableau[t.col];if(!s)return null;if(n.kind==="tableau"&&n.col===t.col)return null;if(s.up.length===0&&s.down.length>0)return null;if(!Re(o,A(s.up)))return null;let u=ke(e,n);return{...u,moves:e.moves+1,tableau:u.tableau.map((i,c)=>c===t.col?{down:i.down,up:[...i.up,...r]}:i)}}function W(e,n){for(let t=0;t<4;t++){let r=Ee(e,n,{kind:"foundation",pile:t});if(r)return r}return null}function hn(e){let n=e;for(let t=0;t<52;t++){let r=W(n,{kind:"waste"});for(let o=0;o<7&&!r;o++){let s=n.tableau[o]?.up??[];if(s.length)r=W(n,{kind:"tableau",col:o,index:s.length-1})}if(!r)return n;n=r}return n}var gn=(e)=>e.foundations.every((n)=>n.length===13),Tn=(e)=>e.stock.length===0&&e.waste.length===0&&e.tableau.every((n)=>n.down.length===0);function wn(e){if(!e||typeof e!=="object")return null;let n=e,t=(u)=>Array.isArray(u)&&u.every((i)=>Number.isInteger(i)&&i>=0&&i<52);if(!t(n.stock)||!t(n.waste))return null;if(!Array.isArray(n.foundations)||n.foundations.length!==4||!n.foundations.every(t))return null;if(!Array.isArray(n.tableau)||n.tableau.length!==7)return null;let r=[];for(let u of n.tableau){if(!u||typeof u!=="object")return null;let i=u;if(!t(i.down)||!t(i.up))return null;r.push({down:i.down,up:i.up})}let o=[...n.stock,...n.waste,...n.foundations.flat(),...r.flatMap((u)=>[...u.down,...u.up])];if(o.length!==52||new Set(o).size!==52)return null;let s=Number.isInteger(n.moves)&&n.moves>=0?n.moves:0;return{stock:n.stock,waste:n.waste,foundations:n.foundations,tableau:r,drawCount:n.drawCount===3?3:1,moves:s}}var re={};y(re,{GROUND:()=>Pn,HEIGHT:()=>yn,MASCOT_X:()=>Mn,RESTART_DELAY_MS:()=>kn,WIDTH:()=>xn,hits:()=>Ge,jump:()=>vn,newRun:()=>Ce,nextRandom:()=>te,readBest:()=>Gn,release:()=>En,score:()=>Rn,step:()=>Cn});var xn=64,yn=30,kn=600;var Pn=2,Mn=4,ee={left:3,right:8,top:11};var ne=[{x:0,w:3,h:4},{x:0,w:2,h:7},{x:0,w:6,h:4},{x:0,w:4,h:6}];function te(e){let n=e+1831565813|0,t=Math.imul(n^n>>>15,1|n);return t=t+Math.imul(t^t>>>7,61|t)^t,[((t^t>>>14)>>>0)/4294967296,n]}var Ce=(e)=>({phase:"ready",tick:0,y:0,vy:0,speed:1.6,distance:0,obstacles:[],nextGap:40,seed:e,buffer:0}),Rn=(e)=>Math.floor(e.distance/4);function vn(e){if(e.phase==="ready")return{...e,phase:"running",vy:4.8};if(e.phase==="over")return{...Ce(e.seed),phase:"running"};return e.y===0?{...e,vy:4.8,buffer:0}:{...e,buffer:3}}function En(e){return e.phase==="running"&&e.vy>2.6?{...e,vy:2.6}:e}function Ge(e,n){return 4+ee.left<n.x+n.w&&n.x<4+ee.right&&e.y<n.h&&n.h>0&&e.y+ee.top>0}function Cn(e){if(e.phase!=="running")return e;let n=e.vy-0.9,t=Math.max(0,e.y+e.vy),r=t===0,o=Math.min(3.2,e.speed+0.0015),s=e.seed,u=e.obstacles.map((a)=>({...a,x:a.x-o})).filter((a)=>a.x+a.w>0),i=e.nextGap-o;if(i<=0){let[a,f]=te(s),[b,p]=te(f);s=p;let S=ne[Math.floor(a*ne.length)]??ne[0];if(S)u=[...u,{...S,x:64}];i=26+o*8+b*30}let c=r&&e.buffer>0,l={...e,tick:e.tick+1,y:t,vy:c?4.8:r?0:n,speed:o,distance:e.distance+o,obstacles:u,nextGap:i,seed:s,buffer:c?0:Math.max(0,e.buffer-1)};return u.some((a)=>Ge(l,a))?{...l,phase:"over"}:l}var Gn=(e)=>typeof e==="number"&&Number.isInteger(e)&&e>=0?e:0;var se={};y(se,{FRAMES:()=>An,PALETTE:()=>Fn,halve:()=>Ln});var Fn={C:"#2f5a3b",c:"#3d7049",D:"#1d3a26",H:"#4a3528",S:"#f1b77c",s:"#dd9c62",G:"#1c1a19",E:"#2b1d15",B:"#3d2b21",T:"#babbb3",P:"#353333",p:"#232222"},L=["........CCCCCC......",".......CcCCCCCC.....","......CcCCCCCCCC....",".....CCCCCCCCCCC....","..DDDCCCCCCCCCCC....",".....HSSSSSSSSSH....",".....HSSSSSSSSSH....","....sGGGGGSGGGGGs..."],U=[".....GGGGGSGGGGG....",".....BSSSSSSSSSB....",".....BBSSBBBSSBB....",".....BBBBBBBBBBB...."],oe=["......BBBBBBBBB.....","....TTTBBBBBBBTTT...","...TTTTTTBBBTTTTTT..","...SSTTTTTTTTTTTSS..","...SSTTTTTTTTTTTSS..","......PPPPPPPPP....."],An={idle:[...L,"....sGSESGGGSESGs...","....sGSESGSGSESGs...",...U,".....BBBBSSSBBBB....",".....BBBBBBBBBBB....",...oe,"......PPP...PPP.....","......ppp...ppp....."],walk_a:[...L,"....sGSESGGGSESGs...","....sGSESGSGSESGs...",...U,".....BBBBSSSBBBB....",".....BBBBBBBBBBB....",...oe,".....PPP.....PPP....",".....ppp.....ppp...."],walk_b:[...L,"....sGSESGGGSESGs...","....sGSESGSGSESGs...",...U,".....BBBBSSSBBBB....",".....BBBBBBBBBBB....",...oe,".......PPP.PPP......",".......ppp.ppp......"],think:[...L,"....sGSEGGGGSEGGs...","....sGSSSGSGSSSGs...",...U,".....BBBBSSSBBBB....",".....BBBBBBBBSSB....","......BBBBBBBSS.....","....TTTBBBBBBTTTT...","...TTTTTTBBBTTTTTT..","...SSTTTTTTTTTTT....","...SSTTTTTTTTTTT....","......PPPPPPPPP.....","......PPP...PPP.....","......ppp...ppp....."],cheer:[...L,"....sGSESGGGSESGs...","....sGESEGSGESEGs...",...U,".....BBBSSSSSBBB....","..SS.BBBBSSSBBBB.SS.","..SS..BBBBBBBBB..SS.","...TTTTBBBBBBBTTTT..","...TTTTTTBBBTTTTTT..",".....TTTTTTTTTTT....",".....TTTTTTTTTTT....","......PPPPPPPPP.....","......PPP...PPP.....","......ppp...ppp....."]};function Ln(e){let n=[];for(let t=0;t+1<e.length;t+=2){let r="";for(let o=0;o+1<(e[0]?.length??0);o+=2){let s=[e[t]?.[o],e[t]?.[o+1],e[t+1]?.[o],e[t+1]?.[o+1]].filter((c)=>c!==void 0&&c!==".");if(s.length<2){r+=".";continue}let u=new Map;for(let c of s)u.set(c,(u.get(c)??0)+1);let i=(c)=>(u.get(c)??0)*10+("GE".includes(c)?1:0);r+=[...u.keys()].sort((c,l)=>i(l)-i(c))[0]??"."}n.push(r)}return n}var ue={};y(ue,{EMPTY_STATS:()=>Un,addResult:()=>_n,averageOfFive:()=>Dn,nextRating:()=>Fe,readResult:()=>Kn,readStats:()=>On});var Un={chess:{wins:0,losses:0,draws:0,rating:800},cube:{solves:0,bestMs:null,recentMs:[]},solitaire:{wins:0,played:0,bestMs:null},runner:{runs:0,best:0}},x=(e)=>Number.isInteger(e)&&e>=0?e:0,N=(e)=>typeof e==="number"&&Number.isFinite(e)&&e>0?e:null,C=(e)=>e&&typeof e==="object"?e:{};function On(e){let n=C(e),t=C(n.chess),r=C(n.cube),o=C(n.solitaire),s=C(n.runner),u=typeof t.rating==="number"&&Number.isFinite(t.rating)?t.rating:800;return{chess:{wins:x(t.wins),losses:x(t.losses),draws:x(t.draws),rating:u},cube:{solves:x(r.solves),bestMs:N(r.bestMs),recentMs:Array.isArray(r.recentMs)?r.recentMs.map(N).filter((i)=>i!==null).slice(-5):[]},solitaire:{wins:x(o.wins),played:x(o.played),bestMs:N(o.bestMs)},runner:{runs:x(s.runs),best:x(s.best)}}}function Fe(e,n,t){let o=1/(1+10**(((R[n]?.rating??R[1].rating)-e)/400));return Math.round(e+32*(t-o))}function Dn(e){if(e.length<5)return null;return[...e.slice(-5)].sort((t,r)=>t-r).slice(1,4).reduce((t,r)=>t+r,0)/3}function Kn(e){let n=C(e);if(n.type!=="result")return null;if(n.game==="chess"&&(n.result==="win"||n.result==="loss"||n.result==="draw")){let r=Number.isInteger(n.level)&&n.level>=0&&n.level<R.length?n.level:1;return{game:"chess",result:n.result,level:r}}let t=N(n.ms);if(n.game==="cube"&&t!==null)return{game:"cube",ms:t};if(n.game==="solitaire"&&(n.result==="win"||n.result==="abandoned"))return{game:"solitaire",result:n.result,ms:t??0};if(n.game==="runner"&&Number.isInteger(n.score)&&n.score>=0&&n.score<1e7)return{game:"runner",score:n.score};return null}function _n(e,n){if(n.game==="chess"){let o=e.chess,s=n.result==="win"?1:n.result==="draw"?0.5:0;return{...e,chess:{wins:o.wins+(n.result==="win"?1:0),losses:o.losses+(n.result==="loss"?1:0),draws:o.draws+(n.result==="draw"?1:0),rating:Fe(o.rating,n.level,s)}}}if(n.game==="cube"){let o=e.cube;return{...e,cube:{solves:o.solves+1,bestMs:o.bestMs===null?n.ms:Math.min(o.bestMs,n.ms),recentMs:[...o.recentMs,n.ms].slice(-5)}}}if(n.game==="runner")return{...e,runner:{runs:e.runner.runs+1,best:Math.max(e.runner.best,n.score)}};let t=e.solitaire,r=n.result==="win";return{...e,solitaire:{wins:t.wins+(r?1:0),played:t.played+1,bestMs:r&&n.ms>0?t.bestMs===null?n.ms:Math.min(t.bestMs,n.ms):t.bestMs}}}function Ae(e){let n=Math.max(0,Math.floor(e/10)),t=n%100,r=Math.floor(n/100)%60,o=Math.floor(n/6000);return`${o>0?`${o}:${String(r).padStart(2,"0")}`:r}.${String(t).padStart(2,"0")}`}globalThis.GM={chess:H,ai:Q,cube:X,solitaire:Z,runner:re,mascot:se,stats:ue,formatMs:Ae};})();
+</script>
+<script>window.GM_ART = {"idle":"data:image/webp;base64,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","cheer":"data:image/webp;base64,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"}</script>
+<script>(() => {
+'use strict'
+// Shared by every game on the page: storage, a DOM helper, motion helpers and
+// drag-and-drop. Concatenated with the other web/src files into one script.
+const { chess: C, ai: AI, cube: CU, solitaire: SO, runner: RU, mascot: MA, stats: ST, formatMs } = window.GM
+
+// ---- storage: this browser only, every access guarded ----
+const STORE_KEY = 'grandmaster.web.v1'
+function readStore() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY) || '{}')
+    return raw && typeof raw === 'object' ? raw : {}
+  } catch {
+    return {}
+  }
+}
+let store = readStore()
+// Each write starts from this page's own copy, then what is stored now (a second
+// window's saves), then the change. With storage blocked or full, the page's
+// own copy still carries every game for the visit.
+function writeStore(patch) {
+  store = { ...store, ...readStore(), ...patch }
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(store))
+  } catch {
+    // Private windows and blocked storage: the games still play, nothing is kept.
+  }
+}
+const saveGame = (key, value) => writeStore({ [key]: value })
+let record = ST.readStats(store.stats)
+function addResult(result) {
+  record = ST.addResult(ST.readStats({ ...store, ...readStore() }.stats), result)
+  writeStore({ stats: record })
+}
+
+// ---- DOM ----
+function h(tag, props, ...kids) {
+  const node = document.createElement(tag)
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v === undefined || v === null || v === false) continue
+    if (k === 'class') node.className = v
+    else if (k === 'style') node.style.cssText = v
+    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v)
+    else node.setAttribute(k, v === true ? '' : String(v))
+  }
+  for (const kid of kids.flat()) {
+    if (kid === null || kid === undefined || kid === false) continue
+    node.append(kid instanceof Node ? kid : document.createTextNode(String(kid)))
+  }
+  return node
+}
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+const typing = e => e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)
+const modified = e => e.ctrlKey || e.metaKey || e.altKey
+
+function paintSprite(ctx, frame, x0, y0, px) {
+  frame.forEach((line, y) => {
+    for (let x = 0; x < line.length; x++) {
+      const key = line[x]
+      if (key === '.') continue
+      ctx.fillStyle = MA.PALETTE[key] || '#000'
+      ctx.fillRect(x0 + x * px, y0 + y * px, px, px)
+    }
+  })
+}
+
+// ---- motion ----
+const EASE_OUT = 'cubic-bezier(.2,.8,.2,1)'
+
+/** Glides `node` from a screen rectangle to where it now sits. The start is the
+ *  rectangle as measured (transforms included), so a move begun mid-flight
+ *  continues from where the eye last saw it. */
+function glideFrom(node, from, ms = 220) {
+  if (!node || !from || reducedMotion.matches) return
+  const to = node.getBoundingClientRect()
+  const dx = from.left - to.left
+  const dy = from.top - to.top
+  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return
+  node.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }], { duration: ms, easing: EASE_OUT })
+}
+
+/** Measures every `[data-key]` under `root`, runs `change` (which redraws),
+ *  then glides each redrawn node with the same key from its old place. */
+function glideAll(root, change) {
+  const before = new Map()
+  root.querySelectorAll('[data-key]').forEach(n => before.set(n.dataset.key, n.getBoundingClientRect()))
+  change()
+  root.querySelectorAll('[data-key]').forEach(n => glideFrom(n, before.get(n.dataset.key)))
+}
+
+/** The drag under way, if any: one at a time, so a lost release can never leave two running. */
+let activeDrag = null
+/** True while a piece or card is held: key shortcuts wait until it is let go. */
+const dragging = () => activeDrag !== null
+
+/**
+ * Drag and drop with the pointer. On a press of `nodes[0]` the nodes follow the
+ * pointer exactly once it has moved 4px. On release, `drop(target, rect)` runs
+ * once: `target` is the element with `data-drop` under the pointer (or null),
+ * `rect` the first node's place on screen. It returns true when the move was
+ * made (the caller redraws and glides from `rect`); otherwise the nodes ease
+ * back from where they were let go. A press that never moved is a click.
+ * Only the pointer that pressed counts; a cancelled press does nothing.
+ */
+function startDrag(e, nodes, { drop, click, lift }) {
+  if (e.button !== undefined && e.button !== 0) return
+  activeDrag?.cancel()
+  const id = e.pointerId
+  const startX = e.clientX
+  const startY = e.clientY
+  let moved = false
+  let dx = 0
+  let dy = 0
+  const first = nodes[0]
+  try { first.setPointerCapture(id) } catch { /* the pointer is already gone */ }
+
+  function detach() {
+    first.removeEventListener('pointermove', onMove)
+    first.removeEventListener('pointerup', onUp)
+    first.removeEventListener('pointercancel', onCancel)
+    first.removeEventListener('lostpointercapture', onLost)
+    activeDrag = null
+  }
+  function easeBack() {
+    for (const n of nodes) {
+      n.style.transform = ''
+      if (reducedMotion.matches || !n.isConnected) {
+        n.classList.remove('lifted')
+        continue
+      }
+      // Stays lifted (above its neighbours) until it is home.
+      const anim = n.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }], { duration: 200, easing: EASE_OUT })
+      anim.onfinish = () => n.classList.remove('lifted')
+      anim.oncancel = () => n.classList.remove('lifted')
+    }
+  }
+  function onMove(ev) {
+    if (ev.pointerId !== id) return
+    dx = ev.clientX - startX
+    dy = ev.clientY - startY
+    if (!moved && Math.hypot(dx, dy) < 4) return
+    if (!moved) {
+      moved = true
+      nodes.forEach(n => n.classList.add('lifted'))
+      lift?.()
+    }
+    for (const n of nodes) n.style.transform = `translate(${dx}px, ${dy}px)`
+  }
+  function onUp(ev) {
+    if (ev.pointerId !== id) return
+    detach()
+    if (!moved) return click?.()
+    const rect = first.getBoundingClientRect()
+    nodes.forEach(n => { n.style.visibility = 'hidden' })
+    const under = document.elementFromPoint(ev.clientX, ev.clientY)
+    nodes.forEach(n => { n.style.visibility = '' })
+    const target = under ? under.closest('[data-drop]') : null
+    if (!drop(target, rect)) easeBack()
+  }
+  function cancel() {
+    detach()
+    if (moved) {
+      easeBack()
+      drop(null, first.getBoundingClientRect())
+    }
+  }
+  function onCancel(ev) {
+    if (ev.pointerId === id) cancel()
+  }
+  // Capture is lost when the node is redrawn away or the browser takes the pointer.
+  function onLost(ev) {
+    if (ev.pointerId === id && activeDrag === handle) cancel()
+  }
+  const handle = { cancel }
+  activeDrag = handle
+  first.addEventListener('pointermove', onMove)
+  first.addEventListener('pointerup', onUp)
+  first.addEventListener('pointercancel', onCancel)
+  first.addEventListener('lostpointercapture', onLost)
+}
+
+// Chess on the web page: drag a piece or click it then its square; the engine
+// replies with a sliding move. Rules and engine are the pane's own.
+const GLYPH = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' }
+const PROMO = ['q', 'r', 'b', 'n']
+const PROMO_NAME = { q: 'Queen', r: 'Rook', b: 'Bishop', n: 'Knight' }
+const TIERS = [
+  [1700, 'Legendary', 'var(--tier-legendary)'], [1400, 'Epic', 'var(--tier-epic)'],
+  [1200, 'Rare', 'var(--tier-rare)'], [1000, 'Uncommon', 'var(--tier-uncommon)'], [0, 'Common', 'var(--tier-common)'],
+]
+const tierOf = rating => TIERS.find(([min]) => rating >= min) || TIERS[TIERS.length - 1]
+const ENGINE_BUDGET_MS = 3000
+const RESIGN_WINDOW_MS = 4000
+
+/** A worker running the page's own engine bundle, so the search never blocks the
+ *  page and plays to its full depth on any machine. Null where workers are refused. */
+function engineWorker() {
+  const source = document.getElementById('gm-engine')?.textContent
+  if (!source || typeof Worker === 'undefined') return null
+  const code = `${source}
+;self.onmessage = e => {
+  const { fen, maxDepth, budgetMs, token } = e.data
+  const pos = GM.chess.parseFen(fen)
+  const deadline = Date.now() + budgetMs
+  let best = null
+  for (let d = 1; d <= maxDepth; d++) {
+    const r = GM.ai.searchDepth(pos, d, deadline, best ? best.move : undefined)
+    if (!r) break
+    best = r
+    if (Math.abs(r.score) > 50000) break
+  }
+  self.postMessage({ token, best })
+}`
+  try {
+    const url = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }))
+    const worker = new Worker(url)
+    URL.revokeObjectURL(url)
+    return worker
+  } catch {
+    return null
+  }
+}
+
+function readChess(raw) {
+  const fresh = { history: [C.START_FEN], sans: [], moves: [], side: 'w', level: 1, reported: false, ratedLevel: 1 }
+  if (!raw || typeof raw !== 'object') return fresh
+  const strings = v => Array.isArray(v) && v.every(x => typeof x === 'string')
+  const okLevel = v => Number.isInteger(v) && v >= 0 && v < AI.LEVELS.length
+  const okMoves = v => Array.isArray(v) && v.every(m => Array.isArray(m) && m.length === 2 && m.every(n => Number.isInteger(n) && n >= 0 && n < 64))
+  const side = raw.side === 'b' ? 'b' : 'w'
+  const level = okLevel(raw.level) ? raw.level : 1
+  const empty = { ...fresh, side, level, ratedLevel: level }
+  if (!strings(raw.history) || !strings(raw.sans) || !okMoves(raw.moves)) return empty
+  if (raw.history.length !== raw.sans.length + 1 || raw.moves.length !== raw.sans.length) return empty
+  if (!raw.history.every(f => C.parseFen(f))) return empty
+  return {
+    history: raw.history, sans: raw.sans, moves: raw.moves, side, level,
+    reported: raw.reported === true, ratedLevel: okLevel(raw.ratedLevel) ? Math.min(raw.ratedLevel, level) : level,
+  }
+}
+
+function chessGame(root) {
+  let s = { ...readChess(store.chess), selected: null, hint: null, promo: 'q', note: '', thinking: null, confirmAt: 0 }
+  let thinkToken = 0
+  let timer = 0
+  let alive = true
+  let worker = engineWorker()
+  const pos = () => C.parseFen(s.history[s.history.length - 1])
+  // The outcome reads the whole history (repetition), so it is worked out once per position.
+  let outcomeCache = { key: '', value: null }
+  const result = () => {
+    const key = `${s.history.length}|${s.history[s.history.length - 1]}`
+    if (outcomeCache.key !== key) {
+      outcomeCache = { key, value: C.outcome(pos(), s.history.map(f => C.positionKey(C.parseFen(f)))) }
+    }
+    return outcomeCache.value
+  }
+  const over = () => result().kind !== 'playing'
+  const myTurn = () => !s.thinking && !over() && pos().turn === s.side
+  const persist = () => saveGame('chess', {
+    history: s.history, sans: s.sans, moves: s.moves, side: s.side, level: s.level, reported: s.reported, ratedLevel: s.ratedLevel,
+  })
+  const message = o => o.kind === 'checkmate'
+    ? (o.winner === s.side ? 'Checkmate. You win.' : 'Checkmate. The engine wins.')
+    : o.kind === 'draw' ? `Draw by ${o.reason}.` : ''
+
+  const board = h('div', { class: 'board', role: 'grid', 'aria-label': 'Chess board' })
+  const statusEl = h('div', { class: 'status', 'aria-live': 'polite' })
+  const recordEl = h('div', { class: 'record' })
+  const movesEl = h('div', { class: 'moves', 'aria-label': 'Moves' })
+  const controls = h('div', { class: 'controls' })
+  root.replaceChildren(h('section', { class: 'panel' }, h('div', { class: 'board-wrap' }, board),
+    h('div', { class: 'rail' }, recordEl, statusEl, movesEl, controls,
+      h('p', { class: 'faint' }, 'Drag a piece to its square, or click the piece and then the square. Keys: U takes back, H hints, N starts a new game.'))))
+
+  const squareEl = sq => board.querySelector(`[data-sq="${sq}"]`)
+
+  /** Plays `move`; the piece glides in from `from` (a screen rect) or from its old square. */
+  function play(move, from) {
+    const start = from || squareEl(move.from)?.querySelector('.piece')?.getBoundingClientRect()
+    const before = pos()
+    const san = C.toSan(before, move)
+    s = {
+      ...s, history: [...s.history, C.toFen(C.makeMove(before, move))], sans: [...s.sans, san],
+      moves: [...s.moves, [move.from, move.to]], selected: null, hint: null, note: '', thinking: null,
+    }
+    const o = result()
+    if (o.kind !== 'playing') {
+      if (s.reported) s = { ...s, note: `${message(o)} Already counted once.` }
+      else {
+        addResult({ game: 'chess', result: o.kind === 'draw' ? 'draw' : o.winner === s.side ? 'win' : 'loss', level: s.ratedLevel })
+        s = { ...s, reported: true, note: message(o) }
+      }
+    }
+    persist()
+    render()
+    glideFrom(squareEl(move.to)?.querySelector('.piece'), start, from ? 140 : 260)
+    if (!over() && pos().turn !== s.side) think(false)
+  }
+
+  function think(forHint) {
+    const token = ++thinkToken
+    const start = pos()
+    const maxDepth = forHint ? 3 : (AI.LEVELS[s.level] || AI.LEVELS[1]).depth
+    const startedAt = Date.now()
+    let depth = 1
+    let best = null
+    s = { ...s, thinking: { forHint, depth } }
+    render()
+    const finish = found => {
+      // A reply shown at once reads as a glitch: let the engine take a breath.
+      const wait = forHint ? 0 : Math.max(0, 450 - (Date.now() - startedAt))
+      timer = setTimeout(() => {
+        if (!alive || token !== thinkToken) return
+        if (forHint) {
+          s = { ...s, thinking: null, hint: found.move, note: `Hint: ${C.toSan(start, found.move)}` }
+          render()
+        } else play(AI.pickMove(start, found, s.level, Math.random))
+      }, wait)
+    }
+    // Fallback where workers are refused: one depth per slice on the page itself.
+    const slice = () => {
+      if (!alive || token !== thinkToken) return
+      const found = AI.searchDepth(start, depth, Date.now() + 120, best ? best.move : undefined)
+      if (found) {
+        best = found
+        if (depth >= maxDepth || Date.now() - startedAt > ENGINE_BUDGET_MS || Math.abs(found.score) > 50000) return finish(best)
+        depth++
+        s = { ...s, thinking: { forHint, depth } }
+        renderStatus()
+      } else if (best) return finish(best)
+      timer = setTimeout(slice, 0)
+    }
+    if (!worker) {
+      timer = setTimeout(slice, 0)
+      return
+    }
+    worker.onmessage = e => {
+      if (!alive || e.data.token !== token || token !== thinkToken) return
+      if (e.data.best) finish(e.data.best)
+      else timer = setTimeout(slice, 0)
+    }
+    worker.onerror = () => {
+      worker?.terminate()
+      worker = null
+      if (alive && token === thinkToken) timer = setTimeout(slice, 0)
+    }
+    worker.postMessage({ fen: s.history[s.history.length - 1], maxDepth, budgetMs: ENGINE_BUDGET_MS, token })
+  }
+
+  function cancelThinking() {
+    thinkToken++
+    clearTimeout(timer)
+    s = { ...s, thinking: null }
+  }
+
+  /** The legal move from the selected square to `sq`, promoting to the chosen piece. */
+  function moveTo(fromSq, sq) {
+    const options = C.legalMoves(pos()).filter(m => m.from === fromSq && m.to === sq)
+    return options.find(m => !m.promo || m.promo === s.promo) || options[0] || null
+  }
+
+  function clickSquare(sq) {
+    if (!myTurn()) return
+    const own = C.sideOf(C.pieceAt(pos().board, sq)) === s.side
+    if (s.selected !== null && !own) {
+      const move = moveTo(s.selected, sq)
+      if (move) return play(move)
+    }
+    s = { ...s, selected: own && sq !== s.selected ? sq : null }
+    render()
+  }
+
+  function pressPiece(e, sq, pieceEl) {
+    if (!myTurn() || C.sideOf(C.pieceAt(pos().board, sq)) !== s.side) return
+    e.preventDefault()
+    startDrag(e, [pieceEl], {
+      lift: () => {
+        s = { ...s, selected: sq }
+        markTargets()
+      },
+      click: () => clickSquare(sq),
+      drop: (target, rect) => {
+        // No square under the pointer: the piece eases back and stays selected.
+        if (!target) return false
+        const move = moveTo(sq, Number(target.dataset.sq))
+        if (!move) return false
+        play(move, rect)
+        return true
+      },
+    })
+  }
+
+  function undo() {
+    // Find the position to return to first: with nothing to take back, the
+    // engine's search (if running) carries on untouched.
+    let n = s.history.length - 2
+    while (n > 0 && C.parseFen(s.history[n]).turn !== s.side) n--
+    if (n < 0 || C.parseFen(s.history[n]).turn !== s.side) return
+    cancelThinking()
+    s = {
+      ...s, history: s.history.slice(0, n + 1), sans: s.sans.slice(0, n), moves: s.moves.slice(0, n),
+      selected: null, hint: null, note: s.reported ? 'Move taken back. This game is already in your record.' : 'Move taken back.',
+    }
+    persist()
+    render()
+  }
+
+  function newGame(side) {
+    cancelThinking()
+    s = { ...s, ...readChess(null), side, level: s.level, ratedLevel: s.level, selected: null, hint: null, note: '', confirmAt: 0 }
+    persist()
+    render()
+    if (pos().turn !== s.side) think(false)
+  }
+
+  /** Starting over in the middle of a game is resigning it: the first press
+   *  asks, a second press within a few seconds counts the loss and deals afresh. */
+  function requestNewGame(side) {
+    const inProgress = !over() && !s.reported && s.sans.length >= 2
+    if (!inProgress) return newGame(side)
+    if (Date.now() - s.confirmAt > RESIGN_WINDOW_MS) {
+      s = { ...s, confirmAt: Date.now(), note: 'Press again to resign this game. It counts as a loss.' }
+      return render()
+    }
+    addResult({ game: 'chess', result: 'loss', level: s.ratedLevel })
+    newGame(side)
+    s = { ...s, note: 'Resigned. The loss is in your record.' }
+    renderStatus()
+  }
+
+  function renderStatus() {
+    const o = result()
+    const p = pos()
+    statusEl.textContent = s.note || (o.kind !== 'playing' ? message(o)
+      : s.thinking && !s.thinking.forHint ? `Engine thinking, depth ${s.thinking.depth}...`
+      : s.thinking ? 'Looking for a hint...'
+      : p.turn === s.side ? `Your move${C.inCheck(p) ? '. You are in check.' : '.'}` : 'Engine to move.')
+  }
+
+  /** Marks where the selected piece may go, without redrawing the board (a drag is under way). */
+  function markTargets() {
+    board.querySelectorAll('.target').forEach(n => n.classList.remove('target', 'capture'))
+    board.querySelectorAll('.sel').forEach(n => n.classList.remove('sel'))
+    if (s.selected === null) return
+    squareEl(s.selected)?.classList.add('sel')
+    for (const m of C.legalMoves(pos())) {
+      if (m.from !== s.selected) continue
+      const el = squareEl(m.to)
+      el?.classList.add('target')
+      if (C.pieceAt(pos().board, m.to)) el?.classList.add('capture')
+    }
+  }
+
+  function render() {
+    const p = pos()
+    const mine = myTurn()
+    const last = s.moves[s.moves.length - 1]
+    const checked = C.inCheck(p) ? C.kingSquare(p.board, p.turn) : -1
+    const squares = []
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const sq = s.side === 'w' ? r * 8 + c : (7 - r) * 8 + (7 - c)
+        const piece = C.pieceAt(p.board, sq)
+        const name = C.squareName(sq)
+        const cls = ['sq', (Math.floor(sq / 8) + (sq % 8)) % 2 === 0 ? 'light' : 'dark']
+        if (last && (sq === last[0] || sq === last[1])) cls.push('last')
+        if (s.hint && (sq === s.hint.from || sq === s.hint.to)) cls.push('hint')
+        if (sq === checked) cls.push('check')
+        const pieceEl = piece
+          ? h('span', {
+            class: `piece ${C.sideOf(piece)}${C.sideOf(piece) === s.side && mine ? ' movable' : ''}`,
+            onpointerdown: e => pressPiece(e, sq, e.currentTarget),
+          }, `${GLYPH[piece.toLowerCase()]}︎`)
+          : null
+        squares.push(h('div', {
+          class: cls.join(' '), role: 'gridcell', 'data-sq': sq, 'data-drop': 'square',
+          'aria-label': `${name}${piece ? ` ${C.sideOf(piece) === 'w' ? 'white' : 'black'} ${piece.toLowerCase()}` : ''}`,
+          // A press on one of your own pieces is handled by its drag (a click
+          // there is a select); every other click, captures included, lands here.
+          tabindex: '-1', onclick: e => { if (!e.target.closest('.piece.movable')) clickSquare(sq) },
+        },
+        r === 7 ? h('span', { class: 'coord file' }, name[0]) : null,
+        c === 0 ? h('span', { class: 'coord rank' }, name[1]) : null,
+        pieceEl))
+      }
+    }
+    board.replaceChildren(...squares)
+    markTargets()
+    const [, tierName, tierColor] = tierOf(record.chess.rating)
+    recordEl.replaceChildren(
+      h('strong', {}, record.chess.rating),
+      h('span', { class: 'chip', style: `color:${tierColor}` }, tierName),
+      h('span', { class: 'muted' }, `${record.chess.wins}W ${record.chess.losses}L ${record.chess.draws}D`),
+    )
+    const pairs = []
+    for (let i = 0; i < s.sans.length; i += 2) pairs.push(`${i / 2 + 1}. ${s.sans[i]}${s.sans[i + 1] ? ` ${s.sans[i + 1]}` : ''}`)
+    movesEl.textContent = pairs.join('\n') || `No moves yet. You play ${s.side === 'w' ? 'White' : 'Black'}.`
+    movesEl.scrollTop = movesEl.scrollHeight
+    const level = AI.LEVELS[s.level] || AI.LEVELS[1]
+    controls.replaceChildren(
+      h('button', { class: 'btn primary', onclick: () => requestNewGame(s.side) }, 'New game'),
+      h('button', { class: 'btn', onclick: undo, disabled: s.sans.length === 0 }, 'Undo'),
+      h('button', { class: 'btn', disabled: !mine, onclick: () => think(true) }, 'Hint'),
+      h('button', {
+        class: 'btn',
+        onclick: () => {
+          const lv = (s.level + 1) % AI.LEVELS.length
+          s = { ...s, level: lv, ratedLevel: s.sans.length === 0 ? lv : Math.min(s.ratedLevel, lv) }
+          persist()
+          render()
+        },
+      }, `Level: ${level.name}`),
+      h('button', { class: 'btn', onclick: () => requestNewGame(s.side === 'w' ? 'b' : 'w') }, s.side === 'w' ? 'Play Black' : 'Play White'),
+      h('button', { class: 'btn', onclick: () => { s = { ...s, promo: PROMO[(PROMO.indexOf(s.promo) + 1) % 4] }; render() } }, `Promote to: ${PROMO_NAME[s.promo]}`),
+    )
+    renderStatus()
+  }
+
+  render()
+  if (!over() && pos().turn !== s.side) think(false)
+  const onKey = e => {
+    // Shortcuts wait while a piece is held, so a redraw cannot pull it from under the pointer.
+    if (typing(e) || modified(e) || dragging() || e.repeat) return
+    const key = e.key.toLowerCase()
+    if (key === 'u') undo()
+    else if (key === 'n') requestNewGame(s.side)
+    else if (key === 'h' && myTurn()) think(true)
+    else if (e.key === 'Escape' && s.selected !== null) { s = { ...s, selected: null }; render() }
+  }
+  document.addEventListener('keydown', onKey)
+  return () => {
+    alive = false
+    cancelThinking()
+    worker?.terminate()
+    document.removeEventListener('keydown', onKey)
+  }
+}
+
+// The Rubik's Cube in 3D: drag the background to spin it (it keeps the speed
+// you throw it with), drag across a face to turn that layer, or use the
+// buttons and keys. The rules engine holds the truth; after each animated turn
+// the stickers are repainted from it, so the picture can never drift.
+const STICKER = { U: '#f4f1ea', R: '#d62828', F: '#1f9d55', D: '#ffd23f', L: '#ff7a1a', B: '#2563eb' }
+const TURN_SET = ['U', "U'", 'D', "D'", 'R', "R'", 'L', "L'", 'F', "F'", 'B', "B'", 'M', "M'", 'x', 'y', 'z']
+const FACE_TURNS = ['U', 'D', 'R', 'L', 'F', 'B', 'M', 'E', 'S']
+const NET = [[0, 3, 0], [4, 0, 3], [2, 3, 3], [1, 6, 3], [5, 9, 3], [3, 3, 6]] // [face, col, row] for the flat fallback
+const MAX_QUEUE = 60
+
+function readCubeSave(saved) {
+  // Every stored token must be a real move: a bad one would stop the animation loop.
+  const moves = v => Array.isArray(v) && v.every(x => typeof x === 'string' && CU.parseMove(x) !== null)
+  const cube = CU.readCube(saved && saved.cube)
+  if (!cube || !moves(saved.scrambledWith) || !moves(saved.history)) {
+    return { cube: CU.solved(), scrambledWith: [], moves: 0, history: [], startedAt: null }
+  }
+  const startedAt = typeof saved.startedAt === 'number' && saved.startedAt <= Date.now() && saved.scrambledWith.length ? saved.startedAt : null
+  return {
+    cube, scrambledWith: saved.scrambledWith, moves: Number.isInteger(saved.moves) && saved.moves >= 0 ? saved.moves : 0,
+    history: saved.history.slice(-500), startedAt,
+  }
+}
+
+/** The move that rotates layer `k` (position along unit axis `a`) by +90 (sign 1) or -90 (sign -1) degrees about `a`. */
+function moveFor(a, k, sign) {
+  for (const base of FACE_TURNS) {
+    const t = CU.TURNS[base]
+    const s = t.axis[0] * a[0] + t.axis[1] * a[1] + t.axis[2] * a[2]
+    if (s === 0 || s * t.layers[0] !== k) continue
+    // A turn is -90 degrees about its own axis, which is s times `a`.
+    return sign === -s ? base : `${base}'`
+  }
+  return null
+}
+
+function cube3d(stage, onTurn) {
+  const THREE = window.THREE
+  if (!THREE) throw new Error('three.js did not load')
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1))
+  stage.append(renderer.domElement)
+  renderer.domElement.className = 'cube-canvas'
+  const scene = new THREE.Scene()
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100)
+  camera.position.set(0, 0, 11)
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75))
+  const key = new THREE.DirectionalLight(0xffffff, 0.6)
+  key.position.set(4, 6, 8)
+  scene.add(key)
+  const spin = new THREE.Group()
+  spin.quaternion.setFromEuler(new THREE.Euler(0.5, -0.62, 0))
+  scene.add(spin)
+
+  // A white rounded square, tinted per sticker by its material colour.
+  const tex = (() => {
+    const c = document.createElement('canvas')
+    c.width = c.height = 128
+    const g = c.getContext('2d')
+    g.fillStyle = '#ffffff'
+    g.beginPath()
+    if (g.roundRect) g.roundRect(6, 6, 116, 116, 22)
+    else g.rect(6, 6, 116, 116)
+    g.fill()
+    return new THREE.CanvasTexture(c)
+  })()
+  const body = new THREE.MeshStandardMaterial({ color: 0x15151c, roughness: 0.55 })
+  const boxGeo = new THREE.BoxGeometry(0.97, 0.97, 0.97)
+  const stickerGeo = new THREE.PlaneGeometry(0.86, 0.86)
+  const cubies = []
+  const stickers = new Map()
+  const keyOf = (p, n) => `${p.join(',')}|${n.join(',')}`
+  for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++) {
+    if (!x && !y && !z) continue
+    const cubie = new THREE.Mesh(boxGeo, body)
+    cubie.position.set(x, y, z)
+    cubie.userData.home = [x, y, z]
+    for (const n of [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]) {
+      if (n[0] && n[0] !== x) continue
+      if (n[1] && n[1] !== y) continue
+      if (n[2] && n[2] !== z) continue
+      const mesh = new THREE.Mesh(stickerGeo, new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.35 }))
+      mesh.position.set(n[0] * 0.49, n[1] * 0.49, n[2] * 0.49)
+      mesh.lookAt(n[0], n[1], n[2])
+      mesh.userData = { p: [x, y, z], n }
+      cubie.add(mesh)
+      stickers.set(keyOf([x, y, z], n), mesh)
+    }
+    spin.add(cubie)
+    cubies.push(cubie)
+  }
+
+  function paint(cube) {
+    CU.STICKERS.forEach((st, i) => {
+      const mesh = stickers.get(keyOf(st.p, st.n))
+      if (mesh) mesh.material.color.set(STICKER[cube[i]])
+    })
+    dirty = true
+  }
+
+  // ---- animation queue: turns play one after another; a long queue plays faster ----
+  const queue = []
+  let current = null
+  let dirty = true
+  const pivot = new THREE.Group()
+  spin.add(pivot)
+
+  function begin(move, cubeAfter) {
+    const parsed = CU.parseMove(move)
+    const t = CU.TURNS[parsed.base]
+    const axis = new THREE.Vector3(...t.axis)
+    const angle = parsed.times === 3 ? Math.PI / 2 : -Math.PI / 2 * parsed.times
+    pivot.quaternion.identity()
+    for (const c of cubies) {
+      const d = c.userData.home[0] * t.axis[0] + c.userData.home[1] * t.axis[1] + c.userData.home[2] * t.axis[2]
+      if (t.layers.includes(d)) pivot.attach(c)
+    }
+    const ms = reducedMotion.matches ? 0 : queue.length > 2 ? 70 : parsed.times === 2 ? 260 : 190
+    current = { axis, angle, start: performance.now(), ms, cubeAfter }
+  }
+  function finish() {
+    for (const c of [...pivot.children]) spin.attach(c)
+    for (const c of cubies) {
+      c.position.set(...c.userData.home)
+      c.quaternion.identity()
+    }
+    pivot.quaternion.identity()
+    paint(current.cubeAfter)
+    current = null
+  }
+  function enqueue(move, cubeAfter) {
+    // A backlog past a few scrambles' worth skips straight to the end state.
+    if (queue.length >= MAX_QUEUE) {
+      queue.length = 0
+      if (current) finish()
+      paint(cubeAfter)
+      return
+    }
+    queue.push({ move, cubeAfter })
+    if (!current) {
+      const next = queue.shift()
+      begin(next.move, next.cubeAfter)
+    }
+  }
+
+  // ---- spinning the view, with momentum ----
+  const spinVel = { x: 0, y: 0 }
+  function spinBy(dx, dy) {
+    const qy = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dx)
+    const qx = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), dy)
+    spin.quaternion.premultiply(qy).premultiply(qx)
+    dirty = true
+  }
+
+  // ---- pointer: a press on a sticker turns its layer by drag direction; elsewhere it spins ----
+  const ray = new THREE.Raycaster()
+  const ndc = new THREE.Vector2()
+  let gesture = null
+  const toScreen = v => {
+    const p = v.clone().project(camera)
+    const r = renderer.domElement.getBoundingClientRect()
+    return [(p.x + 1) / 2 * r.width, (1 - p.y) / 2 * r.height]
+  }
+  function onDown(e) {
+    if (e.button !== 0) return
+    e.preventDefault()
+    renderer.domElement.setPointerCapture(e.pointerId)
+    spinVel.x = spinVel.y = 0
+    const r = renderer.domElement.getBoundingClientRect()
+    ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1)
+    ray.setFromCamera(ndc, camera)
+    const hit = current ? null : ray.intersectObjects([...stickers.values()], false)[0]
+    gesture = { x: e.clientX, y: e.clientY, lastX: e.clientX, lastY: e.clientY, t: performance.now(), sticker: hit ? hit.object.userData : null, done: false }
+  }
+  function onMove(e) {
+    if (!gesture) return
+    const now = performance.now()
+    if (!gesture.sticker) {
+      const dx = (e.clientX - gesture.lastX) * 0.01
+      const dy = (e.clientY - gesture.lastY) * 0.01
+      spinBy(dx, dy)
+      const dt = Math.max(1, now - gesture.t)
+      spinVel.x = dx / dt
+      spinVel.y = dy / dt
+    } else if (!gesture.done) {
+      const dx = e.clientX - gesture.x
+      const dy = e.clientY - gesture.y
+      // An unclear direction waits for more drag rather than giving up.
+      if (Math.hypot(dx, dy) >= 14 && turnFromDrag(gesture.sticker, dx, dy)) gesture.done = true
+    }
+    gesture.lastX = e.clientX
+    gesture.lastY = e.clientY
+    gesture.t = now
+  }
+  function onUp() {
+    if (gesture && !gesture.sticker && (performance.now() - gesture.t > 60 || reducedMotion.matches)) spinVel.x = spinVel.y = 0
+    gesture = null
+  }
+  function turnFromDrag({ p, n }, dx, dy) {
+    const len = Math.hypot(dx, dy)
+    const centre = new THREE.Vector3(p[0] + n[0] * 0.5, p[1] + n[1] * 0.5, p[2] + n[2] * 0.5)
+    const world = centre.clone().applyQuaternion(spin.quaternion)
+    const [sx, sy] = toScreen(world)
+    let best = null
+    for (const a of [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) {
+      if (a[0] * n[0] + a[1] * n[1] + a[2] * n[2] !== 0) continue
+      // Where this sticker heads under a +90 degree turn about `a`, on screen.
+      const along = new THREE.Vector3(...a).cross(centre).normalize().multiplyScalar(0.4)
+      const [tx, ty] = toScreen(centre.clone().add(along).applyQuaternion(spin.quaternion))
+      const vx = tx - sx
+      const vy = ty - sy
+      const vl = Math.hypot(vx, vy) || 1
+      const dot = (vx * dx + vy * dy) / (vl * len)
+      if (!best || Math.abs(dot) > Math.abs(best.dot)) best = { a, dot }
+    }
+    if (!best || Math.abs(best.dot) < 0.35) return false
+    const k = Math.round(p[0] * best.a[0] + p[1] * best.a[1] + p[2] * best.a[2])
+    const move = moveFor(best.a, k, best.dot > 0 ? 1 : -1)
+    if (move) onTurn(move)
+    return true
+  }
+  const canvas = renderer.domElement
+  canvas.addEventListener('pointerdown', onDown)
+  canvas.addEventListener('pointermove', onMove)
+  canvas.addEventListener('pointerup', onUp)
+  canvas.addEventListener('pointercancel', onUp)
+  // After the browser drops and restores the graphics context, draw again at once.
+  const onRestored = () => { dirty = true }
+  canvas.addEventListener('webglcontextrestored', onRestored)
+
+  // ---- frame loop: draws only while something moves ----
+  let frame = 0
+  let last = performance.now()
+  function loop(now) {
+    const dt = Math.min(64, now - last)
+    last = now
+    if (current) {
+      const t = current.ms ? Math.min(1, Math.max(0, (now - current.start) / current.ms)) : 1
+      const eased = 1 - (1 - t) ** 3
+      pivot.quaternion.setFromAxisAngle(current.axis, current.angle * eased)
+      dirty = true
+      if (t >= 1) {
+        finish()
+        const next = queue.shift()
+        if (next) begin(next.move, next.cubeAfter)
+      }
+    }
+    if (!gesture && (Math.abs(spinVel.x) > 1e-5 || Math.abs(spinVel.y) > 1e-5)) {
+      spinBy(spinVel.x * dt, spinVel.y * dt)
+      const friction = Math.pow(0.0025, dt / 1000)
+      spinVel.x *= friction
+      spinVel.y *= friction
+    }
+    if (dirty) {
+      renderer.render(scene, camera)
+      dirty = false
+    }
+    frame = requestAnimationFrame(loop)
+  }
+  const resize = () => {
+    const w = stage.clientWidth
+    const hgt = stage.clientHeight
+    if (!w || !hgt) return
+    renderer.setSize(w, hgt, false)
+    camera.aspect = w / hgt
+    camera.updateProjectionMatrix()
+    dirty = true
+  }
+  const ro = new ResizeObserver(resize)
+  ro.observe(stage)
+  resize()
+  frame = requestAnimationFrame(loop)
+
+  return {
+    paint,
+    enqueue,
+    /** Drops queued turns and ends the one playing, so a reset is not repainted by older states. */
+    clear: () => {
+      queue.length = 0
+      if (current) finish()
+    },
+    resetView: () => {
+      spinVel.x = spinVel.y = 0
+      spin.quaternion.setFromEuler(new THREE.Euler(0.5, -0.62, 0))
+      dirty = true
+    },
+    // Frees the GPU side too: a context per visit would otherwise pile up until the browser drops them.
+    dispose: () => {
+      cancelAnimationFrame(frame)
+      ro.disconnect()
+      canvas.removeEventListener('webglcontextrestored', onRestored)
+      for (const mesh of stickers.values()) mesh.material.dispose()
+      tex.dispose()
+      body.dispose()
+      boxGeo.dispose()
+      stickerGeo.dispose()
+      renderer.dispose()
+      renderer.forceContextLoss()
+    },
+  }
+}
+
+function cubeGame(root) {
+  let s = { ...readCubeSave(store.cube), finishedMs: null, showAlgs: false }
+  s = { ...s, note: s.startedAt ? 'Solve resumed. The clock kept running while you were away.' : '' }
+  const persist = () => saveGame('cube', { cube: s.cube, scrambledWith: s.scrambledWith, moves: s.moves, history: s.history, startedAt: s.startedAt })
+
+  const stage = h('div', { class: 'cube-stage', role: 'img', 'aria-label': "Rubik's Cube. Drag the background to spin it, drag across a face to turn it." })
+  const clock = h('div', { class: 'clock', 'aria-live': 'off' })
+  const info = h('div', { class: 'rail' })
+  root.replaceChildren(h('section', { class: 'panel' }, h('div', { class: 'rail' }, stage, clock), info))
+
+  let view = null
+  try {
+    view = cube3d(stage, move => apply(move))
+  } catch {
+    stage.classList.add('flat')
+  }
+  const drawFlat = () => {
+    if (view) return
+    stage.replaceChildren(h('div', { class: 'net' }, NET.flatMap(([face, col, row]) => Array.from({ length: 9 }, (_, i) => h('div', {
+      class: 'sticker',
+      style: `grid-column:${col + (i % 3) + 1};grid-row:${row + Math.floor(i / 3) + 1};background:${STICKER[s.cube[face * 9 + i]]}`,
+    })))))
+  }
+  view?.paint(s.cube)
+
+  function turnBy(alg, base = s) {
+    const tokens = alg.split(/\s+/).filter(Boolean)
+    const solving = base.scrambledWith.length > 0 && base.finishedMs === null
+    const startedAt = solving ? base.startedAt ?? Date.now() : base.startedAt
+    let next = { ...base, moves: base.moves + tokens.length, history: [...base.history, ...tokens].slice(-500), startedAt, note: '' }
+    // Each token animates on its own, the cube state after it attached.
+    let cube = base.cube
+    for (const tok of tokens) {
+      cube = CU.turn(cube, tok)
+      view?.enqueue(tok, cube)
+    }
+    next = { ...next, cube }
+    if (solving && CU.isSolved(cube)) {
+      const ms = Date.now() - startedAt
+      addResult({ game: 'cube', ms })
+      next = { ...next, finishedMs: ms, scrambledWith: [], startedAt: null, note: `Solved in ${formatMs(ms)} with ${next.moves} turns.` }
+    }
+    return next
+  }
+  const apply = alg => { s = turnBy(alg); persist(); render() }
+  const scramble = () => {
+    const moves = CU.scramble(Math.random)
+    const scrambled = turnBy(moves.join(' '), { ...s, scrambledWith: [], finishedMs: null })
+    s = { ...scrambled, scrambledWith: moves, moves: 0, history: [], startedAt: null, finishedMs: null, note: 'Scrambled. The clock starts on your first turn.' }
+    persist()
+    render()
+  }
+  const undo = () => {
+    const last = s.history[s.history.length - 1]
+    if (!last) return
+    const inverse = last.endsWith("'") ? last.slice(0, -1) : last.endsWith('2') ? last : `${last}'`
+    const turned = turnBy(inverse, { ...s, history: s.history.slice(0, -1) })
+    s = { ...turned, history: turned.history.slice(0, -1), note: turned.note || `Undid ${last}.` }
+    persist()
+    render()
+  }
+  const reset = () => {
+    s = { ...s, cube: CU.solved(), scrambledWith: [], moves: 0, history: [], startedAt: null, finishedMs: null, note: 'Reset to solved.' }
+    view?.clear()
+    view?.paint(s.cube)
+    persist()
+    render()
+  }
+  const clockText = () => s.finishedMs !== null ? formatMs(s.finishedMs) : s.startedAt !== null ? formatMs(Date.now() - s.startedAt) : '0.00'
+
+  function render() {
+    drawFlat()
+    clock.textContent = clockText()
+    const ao5 = ST.averageOfFive(record.cube.recentMs)
+    // replaceChildren would print a null as the word "null": hidden lines are filtered out.
+    info.replaceChildren(...[
+      h('div', { class: 'record' },
+        h('strong', {}, record.cube.bestMs === null ? '--' : formatMs(record.cube.bestMs)),
+        h('span', { class: 'muted' }, `best · ${record.cube.solves} solves${ao5 === null ? '' : ` · ao5 ${formatMs(ao5)}`}`)),
+      h('div', { class: 'status', 'aria-live': 'polite' }, s.note || (s.scrambledWith.length ? 'Solve it. The clock waits for your first turn.' : 'Scramble to start a timed solve.')),
+      s.scrambledWith.length ? h('p', { class: 'faint' }, h('span', { class: 'label' }, 'Scramble '), s.scrambledWith.join(' ')) : null,
+      h('div', { class: 'turns' }, TURN_SET.map(m => h('button', { class: 'btn', onclick: () => apply(m), 'aria-label': `Turn ${m}` }, m))),
+      h('div', { class: 'controls' },
+        h('button', { class: 'btn primary', onclick: scramble }, 'Scramble'),
+        h('button', { class: 'btn', onclick: undo, disabled: s.history.length === 0 }, 'Undo'),
+        h('button', { class: 'btn', onclick: reset }, 'Reset'),
+        view ? h('button', { class: 'btn', onclick: () => view.resetView() }, 'Reset view') : null,
+        h('button', { class: 'btn', 'aria-expanded': String(s.showAlgs), onclick: () => { s = { ...s, showAlgs: !s.showAlgs }; render() } }, s.showAlgs ? 'Hide algorithms' : 'Algorithms')),
+      s.showAlgs ? h('div', { class: 'algs' }, CU.ALGS.map(a => h('button', { class: 'alg', onclick: () => apply(a.alg) }, a.name, h('code', {}, `${a.alg}  ·  x${a.order} returns to start`)))) : null,
+      h('p', { class: 'faint' }, `${s.moves} turns. Drag a face to turn it, drag around the cube to spin it. Keys: U D R L F B M E S X Y Z, Shift for prime, Space scrambles, Backspace undoes.`),
+    ].filter(Boolean))
+  }
+  render()
+  const tick = setInterval(() => { if (s.startedAt !== null && s.finishedMs === null) clock.textContent = clockText() }, 47)
+  const onKey = e => {
+    if (typing(e) || modified(e)) return
+    // Held keys repeat: one scramble or undo per press, never a flood.
+    if (e.key === ' ') { e.preventDefault(); if (!e.repeat) scramble(); return }
+    if (e.key === 'Backspace') { e.preventDefault(); if (!e.repeat) undo(); return }
+    if (e.key.length !== 1) return
+    const lower = e.key.toLowerCase()
+    const base = 'udrlfbmes'.includes(lower) ? lower.toUpperCase() : 'xyz'.includes(lower) ? lower : null
+    if (base) apply(e.shiftKey ? `${base}'` : base)
+  }
+  document.addEventListener('keydown', onKey)
+  return () => {
+    clearInterval(tick)
+    document.removeEventListener('keydown', onKey)
+    view?.dispose()
+  }
+}
+
+// Klondike on the web page: drag cards (a run comes with the card you grab),
+// or click a card then its destination; two clicks send a card home. Every
+// card glides from where it was, whatever moved it.
+function solitaireGame(root) {
+  const saved = store.solitaire && typeof store.solitaire === 'object' ? store.solitaire : {}
+  const savedGame = SO.readKlondike(saved.game)
+  const okTime = v => typeof v === 'number' && Number.isFinite(v) && v >= 0
+  let s = savedGame
+    ? {
+      game: savedGame, startedAt: okTime(saved.startedAt) && saved.startedAt <= Date.now() ? saved.startedAt : null,
+      finishedMs: SO.isWon(savedGame) ? (okTime(saved.finishedMs) ? saved.finishedMs : 0) : null, note: 'Game resumed.',
+    }
+    : { game: SO.deal(Math.random, 1), startedAt: null, finishedMs: null, note: 'Fresh deal. Click the stock to draw.' }
+  s = { ...s, undo: [], selected: null }
+  const isOver = () => s.finishedMs !== null
+  const elapsed = () => s.finishedMs ?? (s.startedAt === null ? 0 : Date.now() - s.startedAt)
+  const persist = () => saveGame('solitaire', { game: s.game, startedAt: s.startedAt, finishedMs: s.finishedMs })
+  const clock = ms => { const sec = Math.floor(ms / 1000); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` }
+
+  const table = h('div', { class: 'table' })
+  const info = h('div', { class: 'rail' })
+  root.replaceChildren(h('section', { class: 'panel' }, table, info))
+
+  /** Takes a new position (gliding every card that moved), keeping the old one for Undo. */
+  function commit(game, note = '') {
+    if (game === s.game) { s = { ...s, selected: null, note }; return glideAll(table, render) }
+    const done = SO.canFinish(game) ? SO.autoPlay(game) : game
+    const startedAt = s.startedAt ?? Date.now()
+    s = { ...s, game: done, startedAt, undo: [...s.undo, s.game].slice(-200), selected: null, note }
+    if (SO.isWon(done) && !isOver()) {
+      const ms = Date.now() - startedAt
+      addResult({ game: 'solitaire', result: 'win', ms })
+      s = { ...s, finishedMs: ms, note: `You won in ${clock(ms)} with ${done.moves} moves.` }
+    }
+    persist()
+    glideAll(table, render)
+  }
+  function newDeal(drawCount) {
+    if (!isOver() && s.game.moves > 0) addResult({ game: 'solitaire', result: 'abandoned', ms: elapsed() })
+    s = { game: SO.deal(Math.random, drawCount), undo: [], selected: null, startedAt: null, finishedMs: null, note: `New deal, draw ${drawCount}.` }
+    persist()
+    render()
+  }
+  const same = (a, b) => Boolean(a && b) && a.kind === b.kind && a.col === b.col && a.index === b.index && a.pile === b.pile
+  function pick(src, drop) {
+    if (isOver()) return
+    const sel = s.selected
+    if (sel) {
+      if (src && same(sel, src)) {
+        const home = SO.toFoundation(s.game, sel)
+        if (home) return commit(home)
+        s = { ...s, selected: null }
+        return glideAll(table, render)
+      }
+      const moved = drop ? SO.move(s.game, sel, drop) : null
+      if (moved) return commit(moved)
+    }
+    // A selection change still glides, so a card mid-flight is never snapped into place.
+    if (src && SO.lifted(s.game, src).length) { s = { ...s, selected: src, note: '' }; return glideAll(table, render) }
+    s = { ...s, selected: null, note: sel ? 'That move is not allowed.' : '' }
+    glideAll(table, render)
+  }
+  const undo = () => {
+    const prev = s.undo[s.undo.length - 1]
+    if (!prev || isOver()) return
+    s = { ...s, game: prev, undo: s.undo.slice(0, -1), selected: null, note: 'Move taken back.' }
+    persist()
+    glideAll(table, render)
+  }
+
+  const targetOf = el => el.dataset.drop === 'foundation'
+    ? { kind: 'foundation', pile: Number(el.dataset.pile) }
+    : { kind: 'tableau', col: Number(el.dataset.col) }
+  const isSel = src => {
+    const sel = s.selected
+    if (!sel) return false
+    if (sel.kind === 'tableau' && src.kind === 'tableau') return sel.col === src.col && src.index >= sel.index
+    return same(sel, src)
+  }
+
+  /** A press on a face-up card: drag it (and the run above it) or treat it as a click. */
+  function press(e, src, drop) {
+    if (isOver() || e.button > 0) return
+    const lifted = SO.lifted(s.game, src)
+    if (!lifted.length) return
+    e.preventDefault()
+    const nodes = lifted.map(card => table.querySelector(`[data-key="${card}"]`)).filter(Boolean)
+    startDrag(e, nodes, {
+      lift: () => {
+        table.querySelectorAll('[data-drop]').forEach(el => {
+          if (SO.move(s.game, src, targetOf(el))) el.classList.add('can-drop')
+        })
+      },
+      click: () => pick(src, drop),
+      drop: target => {
+        table.querySelectorAll('.can-drop').forEach(el => el.classList.remove('can-drop'))
+        const moved = target ? SO.move(s.game, src, targetOf(target)) : null
+        if (!moved) return false
+        commit(moved)
+        return true
+      },
+    })
+  }
+
+  const face = (card, src, drop, top) => h('div', {
+    class: `card up${SO.isRed(card) ? ' red' : ''}${isSel(src) ? ' selected' : ''}`,
+    style: top ? `top:${top}` : '', 'data-key': card, role: 'button', tabindex: '0', 'aria-label': SO.cardLabel(card),
+    onpointerdown: e => press(e, src, drop),
+    onkeydown: e => { if (e.key === 'Enter') { e.preventDefault(); pick(src, drop) } },
+  }, h('span', { class: 'corner' }, SO.cardLabel(card)), h('span', { class: 'pip' }, SO.SUITS[SO.suitOf(card)]))
+  const back = (card, top) => h('div', { class: 'card down', style: top ? `top:${top}` : '', 'data-key': card })
+
+  function render() {
+    const g = s.game
+    const wasteTop = g.waste[g.waste.length - 1]
+    const stockTop = g.stock[g.stock.length - 1]
+    const top = h('div', { class: 'row' },
+      h('div', { class: 'pile' }, stockTop !== undefined
+        ? h('div', {
+          class: 'card down stock', 'data-key': stockTop, role: 'button', tabindex: '0', 'aria-label': `Stock, ${g.stock.length} cards. Draw`,
+          onclick: () => { if (!isOver()) commit(SO.draw(g)) },
+          onkeydown: e => { if (e.key === 'Enter' && !isOver()) { e.preventDefault(); commit(SO.draw(g)) } },
+        })
+        : h('button', { class: 'slot', 'aria-label': 'Turn the waste over', onclick: () => commit(SO.draw(g)) }, g.waste.length ? '↻' : '')),
+      h('div', { class: 'pile' }, wasteTop === undefined ? h('div', { class: 'slot', style: 'cursor:default' }) : face(wasteTop, { kind: 'waste' }, null)),
+      h('div', {}),
+      ...g.foundations.map((p, pile) => {
+        const drop = { kind: 'foundation', pile }
+        const t = p[p.length - 1]
+        return h('div', { class: 'pile', 'data-drop': 'foundation', 'data-pile': pile }, t === undefined
+          ? h('button', { class: 'slot', 'aria-label': 'Empty foundation', onclick: () => pick(null, drop) }, 'A')
+          : face(t, { kind: 'foundation', pile }, drop))
+      }),
+    )
+    const rows = h('div', { class: 'row' }, g.tableau.map((col, ci) => {
+      const drop = { kind: 'tableau', col: ci }
+      let depth = 0
+      const cards = []
+      col.down.forEach(card => { cards.push(back(card, `calc(var(--cw) * ${depth})`)); depth += 0.16 })
+      col.up.forEach((card, ui) => { cards.push(face(card, { kind: 'tableau', col: ci, index: ui }, drop, `calc(var(--cw) * ${depth})`)); depth += 0.34 })
+      const reach = Math.max(0, depth - (col.up.length ? 0.34 : 0.16))
+      return h('div', {
+        class: 'pile', 'data-drop': 'tableau', 'data-col': ci, style: `min-height:calc(var(--ch) + var(--cw) * ${reach})`,
+        onclick: e => { if (e.target === e.currentTarget || e.target.classList.contains('slot')) pick(null, drop) },
+      }, cards.length ? cards : h('div', { class: 'slot', 'aria-label': 'Empty column, takes a king' }, 'K'))
+    }))
+    table.replaceChildren(top, rows)
+    const homeCount = g.foundations.reduce((n, p) => n + p.length, 0)
+    info.replaceChildren(
+      h('div', { class: 'record' }, h('strong', {}, record.solitaire.wins), h('span', { class: 'muted' },
+        `won of ${record.solitaire.played}${record.solitaire.bestMs ? ` · fastest ${clock(record.solitaire.bestMs)}` : ''}`)),
+      h('div', { class: 'status', 'aria-live': 'polite' }, s.note || `${homeCount} of 52 cards home.`),
+      h('p', { class: 'muted', id: 'sol-clock', style: 'font-variant-numeric:tabular-nums' }, `${g.moves} moves · ${clock(elapsed())} · draw ${g.drawCount}`),
+      h('div', { class: 'controls' },
+        h('button', { class: 'btn primary', onclick: () => newDeal(g.drawCount) }, 'New deal'),
+        h('button', { class: 'btn', onclick: undo, disabled: !s.undo.length || isOver() }, 'Undo'),
+        h('button', { class: 'btn', onclick: () => commit(SO.autoPlay(g), 'Played every card that could go up.') }, 'Auto-play'),
+        h('button', { class: 'btn', onclick: () => newDeal(g.drawCount === 1 ? 3 : 1) }, g.drawCount === 1 ? 'Switch to draw 3' : 'Switch to draw 1')),
+      h('p', { class: 'faint' }, 'Drag cards where they go, or click a card and then its place. Click a card twice to send it home. Keys: Space draws, U undoes, A auto-plays, N deals.'),
+    )
+  }
+  render()
+  const tick = setInterval(() => {
+    const el = document.getElementById('sol-clock')
+    if (el && s.startedAt !== null && !isOver()) el.textContent = `${s.game.moves} moves · ${clock(elapsed())} · draw ${s.game.drawCount}`
+  }, 1000)
+  const onKey = e => {
+    // Shortcuts wait while a card is held, and a held key acts once.
+    if (typing(e) || modified(e) || dragging()) return
+    if (e.key === ' ') e.preventDefault()
+    if (e.repeat) return
+    const key = e.key.toLowerCase()
+    if (key === ' ' && !isOver()) commit(SO.draw(s.game))
+    else if (key === 'u') undo()
+    else if (key === 'a' && !isOver()) commit(SO.autoPlay(s.game), 'Played every card that could go up.')
+    else if (key === 'n') newDeal(s.game.drawCount)
+  }
+  document.addEventListener('keydown', onKey)
+  return () => { clearInterval(tick); document.removeEventListener('keydown', onKey) }
+}
+
+// Mascot Run on the web page: the pane's runner, drawn smooth at screen
+// resolution. Hold to leap, tap to hop; the mascot is the original pixel sprite.
+function runnerGame(root) {
+  const STEP = 50
+  let run = RU.newRun(Math.floor(Math.random() * 2 ** 31))
+  let prev = run
+  let best = Math.max(RU.readBest(store.runner && store.runner.best), record.runner.best)
+  let newBest = false
+  let acc = 0
+  let last = performance.now()
+  let frame = 0
+  let overAt = 0
+  let dirty = true
+  let dust = []
+  const LAND_MS = 140
+  const TUMBLE_MS = 420
+  const POSE_MS = 900
+  // The pose drawn last frame; each frame eases it toward the pose the run calls for.
+  const pose = { at: 0, lift: 0, bob: 0, angle: 0, sy: 1, pivot: 0, phase: 0, air: false, landedAt: -Infinity }
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
+  const approach = (v, target, dt, tau) => (tau <= 0 ? target : v + (target - v) * (1 - Math.exp(-dt / tau)))
+  // The approved 3D renders, inlined by the build as data URIs.
+  const art = {
+    idle: Object.assign(new Image(), { src: window.GM_ART?.idle || '' }),
+    cheer: Object.assign(new Image(), { src: window.GM_ART?.cheer || '' }),
+  }
+  art.idle.onload = () => { dirty = true }
+  art.cheer.onload = () => { dirty = true }
+  const canvas = h('canvas', { class: 'field', role: 'img', 'aria-label': 'Mascot Run. Hold Space or press the field to jump.', style: `aspect-ratio:${RU.WIDTH}/${RU.HEIGHT}`, tabindex: '0' })
+  const hud = h('div', { class: 'record' })
+  const statusEl = h('div', { class: 'status', 'aria-live': 'polite' })
+  // The pointer presses and releases the jump; Enter on the focused button is a
+  // keyboard click (detail 0) and jumps once. Space is the page-wide key.
+  const btn = h('button', {
+    class: 'btn primary',
+    onpointerdown: e => { e.preventDefault(); press() },
+    onpointerup: () => letGo(),
+    onpointercancel: () => letGo(),
+    onclick: e => { if (e.detail === 0) { press(); letGo() } },
+    onkeydown: e => { if (e.key === ' ') e.preventDefault() },
+  }, 'Start')
+  root.replaceChildren(h('section', { class: 'panel' },
+    h('div', { class: 'rail' }, canvas),
+    h('div', { class: 'rail' }, hud, statusEl, h('div', { class: 'controls' }, btn),
+      h('p', { class: 'faint' }, 'Hold Space, the up arrow or the field to leap; tap to hop. The bugs speed up the longer you last.'))))
+  const ctx = canvas.getContext('2d')
+  const lerp = (a, b, t) => a + (b - a) * t
+
+  function press() {
+    if (run.phase === 'over') {
+      // Keys mashed at the crash must not restart the run before it is seen.
+      if (performance.now() - overAt < RU.RESTART_DELAY_MS) return
+      newBest = false
+      dust = []
+    }
+    const wasRunning = run.phase === 'running'
+    run = RU.jump(run)
+    if (!wasRunning) prev = run
+    dirty = true
+    renderHud()
+  }
+  function letGo() {
+    run = RU.release(run)
+  }
+  function renderHud() {
+    hud.replaceChildren(h('strong', {}, String(RU.score(run)).padStart(5, '0')), h('span', { class: 'muted' }, `best ${String(best).padStart(5, '0')} · ${record.runner.runs} runs`))
+    statusEl.textContent = run.phase === 'ready' ? 'Press Space or the field to run.'
+      : run.phase === 'over' ? (newBest ? `New best: ${RU.score(run)}.` : `Caught by a bug at ${RU.score(run)}.`)
+      : 'Jump the bugs.'
+    btn.textContent = run.phase === 'running' ? 'Jump' : run.phase === 'over' ? 'Run again' : 'Start'
+  }
+  function crash() {
+    const points = RU.score(run)
+    newBest = points > best
+    best = Math.max(best, points)
+    overAt = performance.now()
+    addResult({ game: 'runner', score: points })
+    saveGame('runner', { best })
+    dirty = true
+    renderHud()
+  }
+
+  function drawBug(x, top, o, S, groundY, t) {
+    // Legs scuttle with time unless motion is reduced.
+    const wiggle = reducedMotion.matches ? 0 : Math.sin(t / 60 + x) * S * 0.25
+    ctx.strokeStyle = '#7a222a'
+    ctx.lineWidth = Math.max(1, S * 0.3)
+    ctx.lineCap = 'round'
+    for (let lx = 0.7; lx < o.w; lx += 1.1) {
+      ctx.beginPath()
+      ctx.moveTo(x + lx * S, groundY - S * 0.8)
+      ctx.lineTo(x + lx * S - S * 0.5 + wiggle, groundY)
+      ctx.stroke()
+    }
+    const grad = ctx.createLinearGradient(0, top, 0, groundY)
+    grad.addColorStop(0, '#ff6b6f')
+    grad.addColorStop(1, '#c2333a')
+    ctx.fillStyle = grad
+    ctx.beginPath()
+    if (ctx.roundRect) ctx.roundRect(x, top + S * 0.4, o.w * S, (o.h - 1) * S, S * 1.4)
+    else ctx.rect(x, top + S * 0.4, o.w * S, (o.h - 1) * S)
+    ctx.fill()
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'
+    ctx.fillRect(x + S * 0.6, top + S * 0.9, o.w * S - S * 1.2, S * 0.5)
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.arc(x + S * 1.1, top + S * 1.9, S * 0.55, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#15151c'
+    ctx.beginPath()
+    ctx.arc(x + S * 0.95, top + S * 1.95, S * 0.25, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.strokeStyle = '#ff6b6f'
+    ctx.beginPath()
+    ctx.moveTo(x + S * 0.9, top + S * 0.6)
+    ctx.quadraticCurveTo(x - S * 0.2, top - S * 0.6, x - S * 0.5, top - S * 0.2)
+    ctx.stroke()
+  }
+
+  function draw(t, now) {
+    const dpr = window.devicePixelRatio || 1
+    const w = Math.round(canvas.clientWidth * dpr)
+    const hgt = Math.round(w * RU.HEIGHT / RU.WIDTH)
+    if (!w) return
+    if (canvas.width !== w || canvas.height !== hgt) { canvas.width = w; canvas.height = hgt }
+    const S = w / RU.WIDTH
+    const groundY = (RU.HEIGHT - RU.GROUND) * S
+    const dist = lerp(prev.distance, run.distance, t)
+    const still = reducedMotion.matches
+    const sky = ctx.createLinearGradient(0, 0, 0, hgt)
+    sky.addColorStop(0, '#0d1016')
+    sky.addColorStop(1, '#1c2230')
+    ctx.fillStyle = sky
+    ctx.fillRect(0, 0, w, hgt)
+    // Two layers of distant server racks, drifting at different speeds.
+    for (const [speed, color, base] of [[0.08, '#191e28', 9], [0.22, '#232a37', 6]]) {
+      const drift = still ? 0 : dist * speed
+      ctx.fillStyle = color
+      for (let i = -1; i < 12; i++) {
+        const span = 76
+        const bx = ((i * 7.3 - drift) % span + span) % span - 6
+        const bh = base + ((i * 37) % 5)
+        ctx.fillRect(bx * S, groundY - bh * S, 5.5 * S, bh * S)
+        ctx.fillStyle = 'rgba(52,208,127,0.35)'
+        if ((i + Math.floor(now / 700)) % 3 === 0 && !still) ctx.fillRect((bx + 1) * S, groundY - (bh - 1.2) * S, S * 0.6, S * 0.4)
+        ctx.fillStyle = color
+      }
+    }
+    ctx.fillStyle = '#2b313c'
+    ctx.fillRect(0, groundY, w, hgt - groundY)
+    ctx.fillStyle = '#434b58'
+    ctx.fillRect(0, groundY, w, S * 0.35)
+    ctx.fillStyle = '#59606b'
+    const shift = still ? 0 : dist
+    for (let x = 0; x < RU.WIDTH + 9; x += 9) {
+      const sx = ((x - shift) % (RU.WIDTH + 9) + RU.WIDTH + 9) % (RU.WIDTH + 9)
+      ctx.fillRect(sx * S, groundY + S * 1.0, S * 1.6, S * 0.3)
+    }
+    for (const o of run.obstacles) {
+      const before = prev.obstacles.find(p => p.w === o.w && p.h === o.h && Math.abs(p.x - o.x) < 6)
+      const x = (before ? lerp(before.x, o.x, t) : o.x) * S
+      drawBug(x, groundY - o.h * S, o, S, groundY, now)
+    }
+    dust = dust.filter(d => now - d.born < 400)
+    for (const d of dust) {
+      const age = (now - d.born) / 400
+      ctx.fillStyle = `rgba(166,164,176,${0.5 * (1 - age)})`
+      ctx.beginPath()
+      ctx.arc((RU.MASCOT_X + 5 + d.vx * age * 6) * S, groundY - age * S * 1.5, S * (0.4 + age * 0.6), 0, Math.PI * 2)
+      ctx.fill()
+    }
+    const y = lerp(prev.y, run.y, t)
+    ctx.fillStyle = 'rgba(0,0,0,0.28)'
+    ctx.beginPath()
+    ctx.ellipse((RU.MASCOT_X + 5.5) * S, groundY + S * 0.2, S * Math.max(1.5, 3.4 - y * 0.12), S * 0.5, 0, 0, Math.PI * 2)
+    ctx.fill()
+    drawFigure(S, groundY, y, lerp(prev.vy, run.vy, t), now)
+  }
+
+  /**
+   * The 3D figure, posed by motion rather than new art (the approved render is
+   * never redrawn): a bob and forward lean while running, a stretch on the way
+   * up, a squash on landing, a forward trip when caught, a hop on a new best.
+   *
+   * Each frame works out a target pose, and the drawn pose eases toward it from
+   * wherever it is now, so nothing ever jumps between phases: a takeoff leaves
+   * the stride smoothly, a mid-air crash settles to the ground, and the next run
+   * gets back up from the trip. The height follows the physics exactly.
+   */
+  function drawFigure(S, groundY, y, vy, now) {
+    const dt = pose.at ? Math.min(64, Math.max(0, now - pose.at)) : 0
+    pose.at = now
+    const img = run.phase === 'over' && newBest ? art.cheer : art.idle
+    if (!img.complete || !img.naturalWidth) {
+      // The renders load from inside the page; until then, the pixel sprite stands in.
+      paintSprite(ctx, MA.FRAMES.idle, RU.MASCOT_X * S, groundY - y * S - 12 * S, S / 2)
+      return
+    }
+    const still = reducedMotion.matches
+    // 12.2 units tall: at the top of a full jump (15.3) the cap stays inside the 28-unit sky.
+    const height = 12.2 * S
+    const width = height * img.naturalWidth / img.naturalHeight
+    // In the air as soon as a jump starts (upward speed), not a tick later.
+    const air = run.phase === 'running' && (y > 0.01 || vy > 0)
+    if (pose.air && !air && run.phase === 'running') {
+      // Landing is judged on the drawn height, so the squash meets the ground.
+      pose.landedAt = now
+      if (!still) dust.push({ born: now, vx: -1 }, { born: now, vx: 1 })
+    }
+    pose.air = air
+
+    let target = { bob: 0, angle: 0, sy: 1, pivot: 0 }
+    if (run.phase === 'running' && !still) {
+      if (air) {
+        // Up: stretched and leaning back a touch; down: easing forward.
+        target = { bob: 0, pivot: 0, sy: clamp(1 + vy * 0.025, 0.94, 1.1), angle: -0.06 + clamp(-vy * 0.02, -0.08, 0.08) }
+      } else {
+        // About four strides a second, a little quicker as the run speeds up.
+        pose.phase += dt * (0.011 + run.speed * 0.0012)
+        const since = now - pose.landedAt
+        const squash = since < LAND_MS ? 0.14 * (1 - since / LAND_MS) : 0
+        target = { bob: Math.abs(Math.sin(pose.phase)) * 0.5, pivot: 0, sy: 1 - 0.03 * Math.cos(pose.phase * 2) - squash, angle: 0.1 }
+      }
+    } else if (run.phase === 'over' && !still) {
+      const fade = Math.max(0, 1 - (now - overAt) / TUMBLE_MS)
+      target = newBest
+        ? { bob: Math.abs(Math.sin((now - overAt) / 170)) * 1.4 * fade, angle: 0, sy: 1, pivot: 0 }
+        // Tripped while running forward: he pitches forward over the front toe.
+        : { bob: 0, angle: 1.2, sy: 1, pivot: 0.3 }
+    }
+    const over = run.phase === 'over'
+    pose.bob = approach(pose.bob, target.bob, dt, still ? 0 : 45)
+    pose.angle = approach(pose.angle, target.angle, dt, still ? 0 : over ? 110 : 45)
+    pose.pivot = approach(pose.pivot, target.pivot, dt, still ? 0 : over ? 110 : 45)
+    pose.sy = approach(pose.sy, target.sy, dt, still ? 0 : 25)
+    // Running, the height is the physics; once caught, he settles to the ground from where he was.
+    pose.lift = over ? approach(pose.lift, 0, dt, still ? 0 : 90) : y
+
+    const pivot = pose.pivot * width
+    const footX = (RU.MASCOT_X + 5.5) * S + pivot
+    const footY = groundY - (pose.lift + pose.bob) * S
+    ctx.save()
+    ctx.translate(footX, footY)
+    ctx.rotate(pose.angle)
+    ctx.scale(1 / Math.sqrt(pose.sy), pose.sy)
+    ctx.drawImage(img, -width / 2 - pivot, -height, width, height)
+    ctx.restore()
+  }
+
+  function loop(now) {
+    const dt = Math.min(250, now - last)
+    last = now
+    if (run.phase === 'running') {
+      acc += dt
+      while (acc >= STEP && run.phase === 'running') {
+        prev = run
+        run = RU.step(run)
+        acc -= STEP
+        if (run.phase === 'over') crash()
+        else if (run.tick % 4 === 0) hud.firstChild.textContent = String(RU.score(run)).padStart(5, '0')
+      }
+    } else acc = 0
+    // Idle (ready or over) the field does not change: draw it once, not every frame.
+    // After a crash the tumble (or the new-best hop) plays out before the field rests.
+    const posing = run.phase === 'over' && now - overAt < POSE_MS
+    if (run.phase === 'running' || dirty || dust.length || posing) {
+      // A field not laid out yet (width 0) stays marked for drawing.
+      dirty = canvas.clientWidth === 0
+      draw(run.phase === 'running' ? acc / STEP : 1, now)
+    }
+    frame = requestAnimationFrame(loop)
+  }
+  const JUMP_KEYS = [' ', 'ArrowUp', 'w']
+  const onKey = e => {
+    if (typing(e) || modified(e) || !JUMP_KEYS.includes(e.key)) return
+    e.preventDefault()
+    if (!e.repeat) press()
+  }
+  const onKeyUp = e => { if (JUMP_KEYS.includes(e.key)) letGo() }
+  // Capture keeps the release with the canvas, so letting go anywhere ends the leap.
+  canvas.addEventListener('pointerdown', e => {
+    e.preventDefault()
+    try { canvas.setPointerCapture(e.pointerId) } catch { /* pointer already gone */ }
+    press()
+  })
+  canvas.addEventListener('pointerup', letGo)
+  canvas.addEventListener('pointercancel', letGo)
+  document.addEventListener('keydown', onKey)
+  document.addEventListener('keyup', onKeyUp)
+  // Coming back to the tab resumes from that moment: no burst of missed frames.
+  const onVisible = () => {
+    if (!document.hidden) {
+      last = performance.now()
+      acc = 0
+      dirty = true
+    }
+  }
+  const onResize = () => { dirty = true }
+  document.addEventListener('visibilitychange', onVisible)
+  window.addEventListener('resize', onResize)
+  renderHud()
+  frame = requestAnimationFrame(loop)
+  return () => {
+    cancelAnimationFrame(frame)
+    document.removeEventListener('keydown', onKey)
+    document.removeEventListener('keyup', onKeyUp)
+    document.removeEventListener('visibilitychange', onVisible)
+    window.removeEventListener('resize', onResize)
+  }
+}
+
+// Starts the page: the 3D mascot in the header and the four game tabs. Keys 1 to
+// 4 switch games; the open game is remembered and can be linked as #cube etc.
+// Shown once decoded, so there is never a broken-image flash; a missing render leaves it hidden.
+const headerMascot = document.getElementById('mascot')
+headerMascot.onload = () => { headerMascot.hidden = false }
+if (window.GM_ART?.idle) headerMascot.src = window.GM_ART.idle
+
+const GAMES = [
+  { id: 'chess', label: 'Chess', mount: chessGame },
+  { id: 'cube', label: "Rubik's Cube", mount: cubeGame },
+  { id: 'solitaire', label: 'Solitaire', mount: solitaireGame },
+  { id: 'runner', label: 'Mascot Run', mount: runnerGame },
+]
+const tabs = document.getElementById('tabs')
+const stage = document.getElementById('game')
+let unmount = () => {}
+let currentTab = GAMES.some(g => g.id === location.hash.slice(1)) ? location.hash.slice(1)
+  : GAMES.some(g => g.id === store.tab) ? store.tab : 'chess'
+
+function show(id) {
+  try {
+    unmount()
+  } catch {
+    // A game that fails to clean up must not stop the next one starting.
+  }
+  currentTab = id
+  writeStore({ tab: id })
+  // Keep a link's #game in step with the open game, so a reload stays here.
+  if (location.hash && location.hash !== `#${id}`) {
+    try { history.replaceState(null, '', `#${id}`) } catch { /* the frame may refuse it */ }
+  }
+  tabs.replaceChildren(...GAMES.map((g, i) => h('button', {
+    class: 'tab', role: 'tab', 'aria-selected': String(g.id === id), onclick: () => show(g.id),
+  }, g.label, h('kbd', {}, i + 1))))
+  const game = GAMES.find(g => g.id === id) || GAMES[0]
+  try {
+    unmount = game.mount(stage)
+  } catch (error) {
+    unmount = () => {}
+    stage.replaceChildren(h('p', { class: 'status' }, `${game.label} could not start here: ${error instanceof Error ? error.message : 'unknown error'}.`))
+  }
+}
+document.addEventListener('keydown', e => {
+  if (typing(e) || modified(e)) return
+  const n = Number(e.key)
+  if (n >= 1 && n <= GAMES.length) show(GAMES[n - 1].id)
+})
+window.addEventListener('hashchange', () => {
+  const id = location.hash.slice(1)
+  if (GAMES.some(g => g.id === id) && id !== currentTab) show(id)
+})
+show(currentTab)
+
+})()
+</script>

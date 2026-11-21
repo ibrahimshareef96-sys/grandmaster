@@ -14,7 +14,7 @@ const FONT = join(homedir(), 'Library/Fonts/Satoshi-Variable.ttf')
 // Fontshare's own stylesheet: the font is served by Fontshare, not passed on by us.
 const FONT_LINK = '<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap">\n'
 const DOCUMENT_HEAD =
-  '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+  '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
 // One scope, in this order: shared helpers first, the tabs last.
 const SOURCES = ['common.js', 'chess.js', 'cube.js', 'solitaire.js', 'runner.js', 'main.js']
 
@@ -66,7 +66,7 @@ if (!html.includes('window.GM_ART = {')) {
   console.error('build: the mascot renders were not inlined')
   process.exit(1)
 }
-if (PUBLIC && html.includes('font/ttf;base64')) {
+if (PUBLIC && (/@font-face\s*\{[^}]*Satoshi/.test(html) || html.includes('base64,AAEAAA'))) {
   console.error('build: the public page must not carry the font file')
   process.exit(1)
 }

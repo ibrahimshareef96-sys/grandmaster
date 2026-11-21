@@ -4,14 +4,17 @@ Chess, a 3D Rubik's Cube, Klondike and Mascot Run, for the minutes while Claude 
 
 **Play now in your browser: https://ibrahimshareef96-sys.github.io/grandmaster/**
 
-<!--SCREENSHOTS-->
+| | |
+| --- | --- |
+| ![The 3D Rubik's Cube, scrambled](docs/screenshots/cube.jpg) | ![Chess against the engine](docs/screenshots/chess.jpg) |
+| ![Klondike solitaire](docs/screenshots/solitaire.jpg) | ![Mascot Run](docs/screenshots/mascot-run.jpg) |
 
 - **Rubik's Cube in 3D:** drag across a face to turn that layer, drag around it to spin it (it keeps your throw), every turn animated. Timed solves, best time, average of five, an algorithm shelf to drill.
 - **Chess:** drag and drop or click-click, the engine's replies slide in, three levels, a rating that moves with every game.
 - **Klondike:** drag and drop (a run comes with the card you grab), legal drops light up, every card glides into place.
 - **Mascot Run:** the 3D Shareefico figure runs, leaps the bugs, squashes as he lands and trips forward when one gets him. Hold to leap, tap to hop.
 
-Progress is saved in your browser.
+Progress is saved in your browser's local storage, nowhere else. The page loads fonts from Google Fonts and Fontshare and three.js from cdnjs, so your browser contacts those hosts.
 
 ## In Claude Code
 

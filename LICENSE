@@ -27,6 +27,7 @@ The mascot is not covered by this licence.
 The Shareefico mascot artwork in this repository, namely the images in
 `web/assets/` and the pixel sprite data in `hooks/mascot.ts`, is
 Copyright (c) 2026 Ibrahim Shareef, all rights reserved. It is included so the
-games run as published. You may not use, copy, modify or redistribute the
-mascot artwork apart from running or forking this project unchanged; to reuse
-the code, replace the mascot with your own artwork.
+games run as published. You may view and play the games with it, including on
+the hosted page, and keep it unchanged in a fork or copy of this repository.
+You may not otherwise use, modify or redistribute the mascot artwork; to reuse
+the code in your own project, replace the mascot with your own artwork.

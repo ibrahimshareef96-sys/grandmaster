@@ -1,14 +1,14 @@
 {
   "name": "grandmaster",
-  "version": "0.2.0",
-  "description": "A games pane beside the chat: chess against an engine, a timed Rubik's Cube, Klondike solitaire and Mascot Run, with progress kept across sessions.",
+  "version": "0.3.0",
+  "description": "Games while Claude works: chess against an engine, a 3D Rubik's Cube, Klondike solitaire and Mascot Run, in the desktop app's browser pane or a pane beside the chat, with progress kept across sessions.",
   "author": { "name": "ibrahimshareef96-sys" },
   "license": "SEE LICENSE IN LICENSE",
   "userConfig": {
     "webPage": {
       "type": "string",
-      "title": "Full version link",
-      "description": "Where the pane's 'Play the 3D version' link goes: the hosted page by default, or your own copy of the built page.",
+      "title": "3D page link",
+      "description": "The 3D page: opened in the desktop app's browser pane at each session start and by the game commands, and the pane's 'Play the 3D version' link elsewhere. The hosted page by default, or your own copy of the built page.",
       "default": "https://ibrahimshareef96-sys.github.io/grandmaster/"
     }
   },

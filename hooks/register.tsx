@@ -1,22 +1,25 @@
-// Grandmaster: a games pane beside the chat. Chess, a Rubik's Cube, Klondike
-// solitaire and a mascot runner, each a Client board; finished games feed a
-// record kept across sessions.
+// Grandmaster: chess, a Rubik's Cube, Klondike solitaire and a mascot runner
+// while Claude works. In the desktop app the 3D page opens in the app's own
+// browser pane at every session start; where there is no browser pane (a
+// terminal, VS Code) a pane of text-cell boards opens instead. Finished games
+// on those boards feed a record kept across sessions; the 3D page keeps its own.
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Stats, Tab } from '../types'
 import { formatMs } from './time'
 import { EMPTY_STATS, addResult, averageOfFive, readResult, readStats } from './stats'
+import { hasBrowserPane } from './browser-pane'
+import {
+  FRESH_BROWSER, PANE, TITLE, lookForBrowserPane, open3dForPerson, openTextForPerson, openTextPane, startAutoOpen,
+} from './open-games'
 
-const PANE = 'grandmaster'
-const TITLE = 'Grandmaster'
 const STATS_KEY = 'stats'
 const SEEN_KEY = 'results.seen'
 /**
- * Where "Play the 3D version" goes: the same games drawn for a browser (a 3D cube
- * you drag to turn, drag and drop for chess and cards), served by GitHub Pages
- * from `docs/`. Set by the `webPage` option; anything but an http(s) link falls
- * back to this page.
+ * The 3D page: the same games drawn for a browser (a 3D cube you drag to turn,
+ * drag and drop for chess and cards), served by GitHub Pages from `docs/`. Set
+ * by the `webPage` option; anything but an http(s) link falls back to this page.
  */
 const DEFAULT_WEB_PAGE = 'https://ibrahimshareef96-sys.github.io/grandmaster/'
 /** The page opens on the game the pane shows (`#cube` etc.), unless the link names its own `#`. */
@@ -49,10 +52,16 @@ const COMMANDS: ReadonlyArray<{ name: string; tab: Tab | null; description: stri
   { name: 'solitaire', tab: 'solitaire', description: 'Play Klondike solitaire in the games pane' },
   { name: 'mascot-run', tab: 'runner', description: 'Play Mascot Run: jump the bugs' },
 ]
+const TEXT_COMMAND = {
+  name: 'games-text',
+  description: 'Open the text-cell games pane and your record (what a terminal shows)',
+} as const
 
 const tab = atom({ plugin: 'grandmaster', key: 'tab' } as const, 'chess' as Tab, { shape: 'tab-1' })
 // The tag changed when the runner joined the record: a value of the old shape reads as empty.
 const stats = atom({ plugin: 'grandmaster', key: 'stats' } as const, EMPTY_STATS, { shape: 'stats-2' })
+// The same value `open-games.ts` keeps; read here to draw the 3D button by the last look.
+const browser = atom({ plugin: 'grandmaster', key: 'browser' } as const, FRESH_BROWSER, { shape: 'browser-2' })
 
 const isTab = (v: unknown): v is Tab => v === 'chess' || v === 'cube' || v === 'solitaire' || v === 'runner'
 
@@ -75,23 +84,36 @@ function summary(t: Tab, s: Stats): string {
 
 export const register: Register = (on, options) => {
   const webPage = webPageFrom(options.webPage)
+
   on('session.start', async ($, e, next) => {
     for (const c of COMMANDS) await $.command.register({ name: c.name, description: c.description })
+    await $.command.register({ name: TEXT_COMMAND.name, description: TEXT_COMMAND.description })
     const stored = readStats(await $.store.get(STATS_KEY))
     await update($, stats, () => stored)
-    // Open beside the chat at every start (and every reload), so the games are
-    // there while Claude works. Not awaited: a session never waits on the pane.
-    void $.ui.open({ id: PANE, title: TITLE }).catch(() => undefined)
+    // The games appear at every session start, once: a reload of the mod keeps
+    // what the person has open. Not awaited: a session never waits on them.
+    await startAutoOpen($, webPage)
     return next(e)
   })
 
   for (const c of COMMANDS) {
     on('command.run', { command: c.name }, async $ => {
       if (c.tab) await update($, tab, () => c.tab as Tab)
-      const { isPlaced } = await $.ui.open({ id: PANE, title: TITLE, focus: true })
+      if (await lookForBrowserPane($)) {
+        const opened = await open3dForPerson($, c.tab === null ? webPage : webPageFor(webPage, c.tab))
+        if (opened.ok) return { text: `${TITLE} opened in 3D in the browser pane.` }
+        const isPlaced = await openTextPane($, true)
+        return { text: `The browser pane did not open (${opened.reason}).${isPlaced ? ' The text-cell pane opened instead.' : ''}` }
+      }
+      const isPlaced = await openTextPane($, true)
       return { text: isPlaced ? `${TITLE} pane opened.` : `${TITLE} is ready; this surface cannot show the pane.` }
     })
   }
+
+  on('command.run', { command: TEXT_COMMAND.name }, async $ => {
+    const isPlaced = await openTextForPerson($)
+    return { text: isPlaced ? `${TITLE} pane opened.` : `${TITLE} is ready; this surface cannot show the pane.` }
+  })
 
   // A board sends one message per action, `{ type: 'save', game, data, result? }`:
   // a board may post once a frame and a later post replaces an earlier one,
@@ -145,12 +167,38 @@ export const register: Register = (on, options) => {
     )
     const { Link } = $.ui.resolve(e)
     // The 3D version leads: the boards below are the quick text-cell version.
+    // In the desktop app it opens in the app's browser pane, so it stays in Claude.
+    // The last look's answer (it subscribes the drawing); a look only when none was taken yet.
+    const inApp = e.surface === 'desktop' && ((await read($, browser)).hasBrowser ?? (await hasBrowserPane($)))
+    const play3d = inApp
+      ? (
+          <Button
+            key="play-3d"
+            variant="primary"
+            onPress={async () => {
+              const opened = await open3dForPerson($, webPageFor(webPage, current))
+              if (opened.ok) return
+              $.ui.toast(`The browser pane did not open: ${opened.reason}`)
+              // Look again, so a browser pane that has gone takes the button with it.
+              await lookForBrowserPane($)
+            }}
+          >
+            ▶ Play the 3D version
+          </Button>
+        )
+      : (
+          <Text bold>
+            <Link href={webPageFor(webPage, current)} label="▶ Play the 3D version" />
+          </Text>
+        )
     const header = (
       <Box flexDirection="column">
-        <Text bold>
-          <Link href={webPageFor(webPage, current)} label="▶ Play the 3D version" />
+        {play3d}
+        <Text dimColor>
+          {inApp
+            ? 'A cube you drag to turn, drag-and-drop chess and cards, in the browser pane beside the chat.'
+            : 'A cube you drag to turn, drag-and-drop chess and cards. Opens in your browser.'}
         </Text>
-        <Text dimColor>A cube you drag to turn, drag-and-drop chess and cards. Opens in your browser.</Text>
         {tabs}
         <Text dimColor>{summary(current, record)}</Text>
       </Box>

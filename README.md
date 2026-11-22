@@ -18,7 +18,11 @@ Progress is saved in your browser's local storage, nowhere else. The page loads 
 
 ## In Claude Code
 
-Install the mod and a games pane opens beside the chat at every session start. Its top line, **▶ Play the 3D version**, opens the page above on the game you are looking at. The pane itself draws with text cells (a Claude Code pane cannot run 3D or drag and drop), so its boards are the quick version, and they keep your record across sessions:
+**In the Claude desktop app**, install the mod and the 3D page above opens in the app's own browser pane at every session start, beside the chat, on the game you played last. `/chess`, `/cube`, `/solitaire` and `/mascot-run` open it on that game; `/games` brings it back if you closed it. Nothing opens in your system browser. The page keeps your progress in the browser pane's storage, which carries over from one session to the next.
+
+A Claude Code pane cannot host a web page (it draws text cells, pictures with no script, and shaders behind the chat), which is why the 3D games open in the browser pane rather than in a pane of the mod's own.
+
+**In a terminal**, and in the desktop app if its browser pane is turned off, a pane of text-cell boards opens beside the chat instead. Its top line, **▶ Play the 3D version**, opens the page in your browser on the game you are looking at. In the desktop app `/games-text` opens this pane too. Its boards keep their own record across sessions:
 
 | Game | In the pane |
 | --- | --- |
@@ -35,7 +39,7 @@ At the prompt of a Claude Code terminal session:
 /plugin install grandmaster --marketplace ibrahimshareef96-sys/grandmaster
 ```
 
-Answer `y` to add the marketplace, then press Enter for the user scope. The pane opens in that session and in every session after.
+Answer `y` to add the marketplace, then press Enter for the user scope. The games open in that session and in every session after.
 
 From a shell:
 
@@ -47,18 +51,19 @@ In the Claude desktop app, where `/plugin` does not run: click + next to the pro
 
 ## Use
 
-- The pane opens beside the chat by itself when a session starts.
-- `/games` reopens it. `/chess`, `/cube`, `/solitaire` and `/mascot-run` open it on that game.
-- Keys 1 to 4 switch tabs while the pane has focus.
-- Games in progress and your record are saved between sessions.
+- The games open by themselves when a session starts: the 3D page in the desktop app's browser pane, else the text-cell pane. A reload of the mod does not open them again.
+- `/games` reopens them. `/chess`, `/cube`, `/solitaire` and `/mascot-run` open them on that game. Each opens the page in place of the tab it opened before, so you never collect copies.
+- `/games-text` opens the text-cell pane.
+- Keys 1 to 4 switch games, in the page and in the pane.
+- Games in progress are saved between sessions, by the page and by the pane each.
 
-The boards draw in the Claude desktop app and in a terminal. In VS Code and the mobile app the pane shows your record only.
+The text-cell boards draw in the Claude desktop app and in a terminal. In VS Code and the mobile app the pane shows your record and the link only: neither has a browser pane or an element that runs a web page.
 
 ## The 3D page
 
 The page lives in `web/` and is built from the same rule engines as the pane. GitHub Pages serves `docs/index.html`, which `bun web/build.ts --public` writes (needs [Bun](https://bun.sh)); it links the Satoshi font from [Fontshare](https://www.fontshare.com/fonts/satoshi) rather than carrying the file. `bun web/build.ts` without the flag writes `web/dist/grandmaster.html`, one self-contained file with Satoshi inlined when `~/Library/Fonts/Satoshi-Variable.ttf` is installed, for hosts that allow scripts and styles from only a few CDNs.
 
-To send the pane's ▶ link to your own copy, set the `webPage` option when you install:
+To open your own copy instead, in the browser pane and from the pane's ▶ link, set the `webPage` option when you install:
 
 ```bash
 claude plugin install grandmaster --marketplace ibrahimshareef96-sys/grandmaster --config webPage=https://your.site/grandmaster.html
@@ -72,13 +77,14 @@ The code is MIT. The Shareefico mascot artwork (`web/assets/`, the sprite in `ho
 
 ## Layout
 
-- `hooks/register.tsx`: commands, the pane, saving progress.
+- `hooks/register.tsx`: commands, what opens at session start, the pane, saving progress.
+- `hooks/browser-pane.ts`: opening the 3D page in the desktop app's browser pane (its `Claude_Browser` tools).
 - `hooks/*-engine.ts`: the rules of each game, pure functions.
 - `hooks/chess-ai.ts`: the chess engine (alpha-beta search with a capture search, thinking one depth per frame).
 - `hooks/mascot.ts`: the mascot sprite, copied unchanged from the video mascot.
 - `hooks/*-client.tsx`: the four boards.
 - `docs/index.html`: the built 3D page GitHub Pages serves (`bun web/build.ts --public`).
 - `web/`: the 3D page's source (`entry.ts` bundles the engines, `src/*.js` one file per game, `page.html` the styles, `build.ts` inlines everything; three.js r128 loads from cdnjs with an integrity hash).
-- `tests/`: rules (including published perft counts for chess), cube turn directions, solitaire rules, a runner auto-player that proves every bug can be cleared, and the pane.
+- `tests/`: rules (including published perft counts for chess), cube turn directions, solitaire rules, a runner auto-player that proves every bug can be cleared, the pane, and what opens where (browser pane, fallbacks, one tab at a time).
 
 Run the checks with `claude plugin validate .` and `claude plugin test .`.
